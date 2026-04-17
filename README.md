@@ -1,110 +1,105 @@
 # qwen-core
 
-> Autonomous Engineering Agent — Built for Youssef. Powered by Qwen.
+A high-performance Model Context Protocol (MCP) server that enables autonomous, tool-driven AI assistance for software development.
 
-[![MCP](https://img.shields.io/badge/MCP-Server-blue)](https://modelcontextprotocol.io)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+## Overview
 
----
+qwen-core transforms Qwen Desktop into a fully agentic coding assistant by providing native tool execution, structured reasoning, and extensible skill definitions. It is designed for developers who need reliable, automated workflows that act first and explain later.
 
-## What is qwen-core?
+## Features
 
-**qwen-core** is a Model Context Protocol (MCP) server that transforms Qwen into a fully autonomous engineering agent. It provides native tool execution, advanced reasoning, and Claude Code-style skills — all running locally on your machine.
+- **Autonomous Agent Loop**: Implements a ReAct-style cycle (Think → Act → Observe → Reflect) for self-directed task completion
+- **11 Native Tools**: File I/O, shell execution, content search, web access, and structured reasoning capabilities
+- **Claude Code Skills Integration**: Load specialized instruction sets from `~/.agents/` for domain-specific workflows
+- **Rules Engine**: Enforce project-specific coding standards via a `.qwenrules` configuration file
+- **Self-Healing Execution**: Automatic error detection, retry logic, and fallback strategies
+- **Standard MCP Compliance**: Uses stdio transport for maximum compatibility with MCP clients
 
-### Key Features
+## Installation
 
-| Feature | Description |
-|---------|-------------|
-| **11 Native Tools** | `bash`, `file_read/write/edit`, `glob/grep_search`, `web_fetch/search`, `todo_write`, `ask_user`, `sequential_thinking` |
-| **ReAct Agent Loop** | Think → Act → Observe → Reflect → Repeat |
-| **Rules Engine** | `.qwenrules` file for project-specific constraints |
-| **Skills System** | Load Claude Code-style skills from `~/.agents/` |
-| **Permission System** | Safety checks before destructive operations |
-| **Session Management** | Conversation persistence across restarts |
-| **Abort Support** | Cancel tasks mid-execution |
-
----
-
-## Quick Start
-
-### Prerequisites
-- Node.js 18+ or Bun
-- `tsx` for TypeScript execution
-- `ripgrep` (optional, for `grep_search` tool)
-
-### Installation
 ```bash
-cd ~/Projects/qwen-core
+git clone https://github.com/youssefvdel/qwen-core.git
+cd qwen-core
 npm install
 ```
 
-### Run as MCP Server
-```bash
-npx tsx src/index.ts
-```
+## Requirements
 
-### Add to Qwen Desktop
-Paste this into **Settings → My MCP → Add MCP**:
+- Node.js 18+ or Bun
+- `npx` (for `tsx` execution)
+- `ripgrep` (optional, required for `grep_search` tool)
+
+## Configuration
+
+Add the following to your MCP client configuration (e.g., Qwen Desktop settings):
 
 ```json
 {
   "mcpServers": {
     "qwen-core": {
       "command": "npx",
-      "args": ["--yes", "tsx", "/home/youssefvdel/Projects/qwen-core/src/index.ts"],
-      "env": { "PATH": "/usr/local/bin:/usr/bin:/bin" }
+      "args": ["--yes", "tsx", "<PATH_TO_QWEN_CORE>/src/index.ts"],
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      }
     }
   }
 }
 ```
 
-**Restart Qwen Desktop** and start using tools naturally:
-```
-You: "List all TypeScript files in this project"
-Qwen → calls glob_search → returns results
-```
-
----
+Replace `<PATH_TO_QWEN_CORE>` with the absolute path to your cloned repository.
 
 ## Available Tools
 
 ### File Operations
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `file_read` | `path: string` | Read file contents |
-| `file_write` | `path, content: string` | Write/overwrite file |
-| `file_edit` | `path, oldText, newText: string` | Search & replace in file |
+| `file_read` | `path: string` | Read file contents with UTF-8 encoding |
+| `file_write` | `path: string, content: string` | Create or overwrite a file |
+| `file_edit` | `path: string, oldText: string, newText: string` | Perform search-and-replace in a file |
 
 ### Search & Discovery
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `glob_search` | `pattern, cwd?: string` | Find files by glob pattern |
-| `grep_search` | `pattern, path?, caseSensitive?` | Search content with ripgrep |
+| `glob_search` | `pattern: string, cwd?: string` | Find files matching a glob pattern |
+| `grep_search` | `pattern: string, path?: string, caseSensitive?: boolean` | Search file contents using ripgrep |
 
-### Shell & Execution
+### Shell Execution
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `bash_execute` | `command, cwd?: string` | Run shell command (30s timeout) |
+| `bash_execute` | `command: string, cwd?: string` | Execute a shell command (30 second timeout) |
 
 ### Web Access
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `web_fetch` | `url: string` | Fetch any URL content |
-| `web_search` | `query, numResults?` | DuckDuckGo web search |
+| `web_fetch` | `url: string` | Retrieve raw content from a URL |
+| `web_search` | `query: string, numResults?: number` | Perform web searches via DuckDuckGo API |
 
 ### Agent & Interaction
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `sequential_thinking` | `thought, step, total` | Log reasoning steps |
-| `todo_write` | `todos: Array<{content, status}>` | Manage task lists |
-| `ask_user` | `question: string` | Prompt for user input |
+| `sequential_thinking` | `thought: string, step: number, total: number` | Log structured reasoning steps |
+| `todo_write` | `todos: Array<{content: string, status: string}>` | Manage structured task lists |
+| `ask_user` | `question: string` | Prompt for user input during execution |
 
----
+## Usage Examples
 
-## Rules Engine (`.qwenrules`)
+Once connected to an MCP client, qwen-core automatically registers all tools. Example interactions:
 
-Create a `.qwenrules` file in your project root to enforce coding standards:
+```
+User: List all TypeScript files in the current directory
+Agent: Calls glob_search(pattern="**/*.ts") → Returns file list
+
+User: Read the contents of package.json
+Agent: Calls file_read(path="./package.json") → Returns file content
+
+User: Search for TODO comments across the codebase
+Agent: Calls grep_search(pattern="TODO") → Returns matching lines
+```
+
+## Rules Engine
+
+Create a `.qwenrules` file in your project root to enforce coding standards and workflow constraints:
 
 ```text
 # .qwenrules
@@ -124,13 +119,11 @@ Run tests before committing.
 Use conventional commits.
 ```
 
-Rules are auto-injected into every agent request.
-
----
+Rules are automatically injected into every agent request.
 
 ## Skills System
 
-Load specialized instruction sets from `~/.agents/`:
+qwen-core supports loading specialized instruction sets from the `~/.agents/` directory:
 
 ```bash
 # List available skills
@@ -139,11 +132,12 @@ Load specialized instruction sets from `~/.agents/`:
 # Load a skill
 /load_skill { "name": "tdd" }
 
-# Get skill info
+# Get skill metadata
 /skill_info { "name": "git" }
 ```
 
-### Example: `tdd` Skill
+### Example Skill Definition
+
 ```yaml
 # ~/.agents/skills/tdd/SKILL.md
 name: tdd
@@ -154,8 +148,6 @@ instructions: |
   - Keep tests isolated and fast
   - Refactor only when tests pass
 ```
-
----
 
 ## Architecture
 
@@ -181,21 +173,19 @@ qwen-core/
 └── README.md
 ```
 
-### Agent Loop Flow
-```
-1. User sends message
-2. QueryEngine injects: system prompt + rules + skills
-3. LLM decides: respond or call tool
-4. If tool: execute → capture result → feed back to LLM
-5. Loop until final answer or max iterations (15)
-6. Return response to user
-```
+### Agent Execution Flow
 
----
+1. User sends a message or task
+2. QueryEngine injects system prompt, active rules, and loaded skills
+3. LLM decides whether to respond directly or call a tool
+4. If a tool is called: execute → capture result → feed back to LLM
+5. Loop continues until a final answer is produced or max iterations (15) is reached
+6. Response is returned to the user
 
 ## Development
 
-### Project Structure
+### Project Setup
+
 ```bash
 npm install -D tsx @types/node
 npx tsx --watch src/index.ts
@@ -203,9 +193,11 @@ npx tsc --noEmit
 ```
 
 ### Adding a New Tool
+
 1. Create `src/tools/MyNewTool.ts`
-2. Implement the tool logic with Zod schema
-3. Register in `src/index.ts`:
+2. Implement the tool logic with a Zod schema for input validation
+3. Register the tool in `src/index.ts`:
+
 ```typescript
 server.tool("my_new_tool", {
   param: z.string()
@@ -215,22 +207,23 @@ server.tool("my_new_tool", {
 ```
 
 ### Testing
+
 ```bash
 echo '{"method":"tools/list"}' | npx tsx src/index.ts
 npx @modelcontextprotocol/inspector
 ```
 
----
-
 ## MCP Integration
 
 ### Transport: Stdio
-qwen-core uses **stdio transport** for maximum compatibility:
-- Works with any MCP client
-- No network overhead
-- Secure (local process only)
+
+qwen-core uses stdio transport for maximum compatibility:
+- Works with any MCP-compliant client
+- No network overhead or configuration
+- Secure execution (local process only)
 
 ### Message Format
+
 ```json
 // Request
 {
@@ -253,28 +246,22 @@ qwen-core uses **stdio transport** for maximum compatibility:
 }
 ```
 
----
-
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feat/amazing-tool`
-3. Implement + test your changes
-4. Run `npm run lint` and `npm run typecheck`
-5. Submit a PR with clear description
+3. Implement and test your changes
+4. Run type checking: `npx tsc --noEmit`
+5. Submit a pull request with a clear description of changes
 
 ### Code Style
-- TypeScript strict mode
-- ESLint + Prettier config coming soon
-- JSDoc for public APIs
-- Meaningful commit messages (conventional commits)
 
----
+- TypeScript strict mode enabled
+- JSDoc comments for public APIs
+- Meaningful commit messages (conventional commits recommended)
 
 ## License
 
-MIT © 2026 Youssef. Built for the top 0.1% engineer journey.
+MIT License. See LICENSE file for details.
 
----
-
-> **Pro Tip**: Use `sequential_thinking` for complex tasks. It helps the agent plan before acting, reducing errors and improving output quality.
+Copyright (c) 2026 qwen-core contributors
