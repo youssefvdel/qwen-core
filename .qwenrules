@@ -1,0 +1,11 @@
+# Global Rules for Qwen-Core
+# These rules are injected into every prompt
+
+Always use bun instead of npm when possible.
+Write clean, type-safe TypeScript code.
+No console.log in production code; use console.error for debugging only.
+Prefer early returns over nested if statements.
+Keep functions small and focused (max 50 lines).
+Comment complex logic, not obvious code.
+Use async/await, not .then() chains.
+Validate all external inputs with Zod.

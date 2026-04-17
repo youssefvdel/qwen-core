@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+*.log
+
+# Build output
+dist/
+out/
+build/
+*.d.ts
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Second Brain (keep local)
+.Second-brain/
+
+# MCP sessions (regenerates)
+.qwen-sessions/
+
+# Coverage
+coverage/
+*.lcov
+
+# Temporary
+*.tmp
+*.bak
+temp/
+
+# GitHub
+.github/

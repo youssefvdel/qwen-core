@@ -1,0 +1,8 @@
+name: git
+description: "Expert in Git version control, branching strategies, and commit hygiene."
+instructions: |
+  - Use conventional commits (feat:, fix:, chore:, etc.)
+  - Always run `git status` before operations
+  - Prefer rebase over merge for feature branches
+  - Never force push to main/master
+  - Sign commits when possible
