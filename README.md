@@ -1,6 +1,6 @@
-# 🧠 qwen-core
+# qwen-core
 
-> **Autonomous Engineering Agent** — Built for Youssef. Powered by Qwen.
+> Autonomous Engineering Agent — Built for Youssef. Powered by Qwen.
 
 [![MCP](https://img.shields.io/badge/MCP-Server-blue)](https://modelcontextprotocol.io)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)](https://www.typescriptlang.org)
@@ -8,25 +8,25 @@
 
 ---
 
-## 🎯 What is qwen-core?
+## What is qwen-core?
 
-**qwen-core** is a Model Context Protocol (MCP) server that transforms Qwen into a **fully autonomous engineering agent**. It provides native tool execution, advanced reasoning, and Claude Code-style skills — all running locally on your machine.
+**qwen-core** is a Model Context Protocol (MCP) server that transforms Qwen into a fully autonomous engineering agent. It provides native tool execution, advanced reasoning, and Claude Code-style skills — all running locally on your machine.
 
-### ✨ Key Features
+### Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🛠️ **11 Native Tools** | `bash`, `file_read/write/edit`, `glob/grep_search`, `web_fetch/search`, `todo_write`, `ask_user`, `sequential_thinking` |
-| 🧠 **ReAct Agent Loop** | Think → Act → Observe → Reflect → Repeat |
-| 📜 **Rules Engine** | `.qwenrules` file for project-specific constraints |
-| 🧩 **Skills System** | Load Claude Code-style skills from `~/.agents/` |
-| 🔐 **Permission System** | Safety checks before destructive operations |
-| 💾 **Session Management** | Conversation persistence across restarts |
-| 🚫 **Abort Support** | Cancel tasks mid-execution |
+| **11 Native Tools** | `bash`, `file_read/write/edit`, `glob/grep_search`, `web_fetch/search`, `todo_write`, `ask_user`, `sequential_thinking` |
+| **ReAct Agent Loop** | Think → Act → Observe → Reflect → Repeat |
+| **Rules Engine** | `.qwenrules` file for project-specific constraints |
+| **Skills System** | Load Claude Code-style skills from `~/.agents/` |
+| **Permission System** | Safety checks before destructive operations |
+| **Session Management** | Conversation persistence across restarts |
+| **Abort Support** | Cancel tasks mid-execution |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ or Bun
@@ -35,22 +35,13 @@
 
 ### Installation
 ```bash
-# Clone or navigate to project
 cd ~/Projects/qwen-core
-
-# Install dependencies
 npm install
-# or
-bun install
 ```
 
 ### Run as MCP Server
 ```bash
-# Development mode
 npx tsx src/index.ts
-
-# Or via npm script
-npm run start
 ```
 
 ### Add to Qwen Desktop
@@ -76,7 +67,7 @@ Qwen → calls glob_search → returns results
 
 ---
 
-## 🛠️ Available Tools
+## Available Tools
 
 ### File Operations
 | Tool | Parameters | Description |
@@ -111,7 +102,7 @@ Qwen → calls glob_search → returns results
 
 ---
 
-## 📜 Rules Engine (`.qwenrules`)
+## Rules Engine (`.qwenrules`)
 
 Create a `.qwenrules` file in your project root to enforce coding standards:
 
@@ -137,7 +128,7 @@ Rules are auto-injected into every agent request.
 
 ---
 
-## 🧩 Skills System
+## Skills System
 
 Load specialized instruction sets from `~/.agents/`:
 
@@ -166,7 +157,7 @@ instructions: |
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 qwen-core/
@@ -202,17 +193,12 @@ qwen-core/
 
 ---
 
-## 🔧 Development
+## Development
 
 ### Project Structure
 ```bash
-# Install dev dependencies
 npm install -D tsx @types/node
-
-# Run with hot reload
 npx tsx --watch src/index.ts
-
-# Type check
 npx tsc --noEmit
 ```
 
@@ -224,23 +210,19 @@ npx tsc --noEmit
 server.tool("my_new_tool", {
   param: z.string()
 }, async ({ param }) => {
-  // Implementation
   return { content: [{ type: "text", text: "Result" }] };
 });
 ```
 
 ### Testing
 ```bash
-# Manual test via stdio
 echo '{"method":"tools/list"}' | npx tsx src/index.ts
-
-# Or use MCP Inspector
 npx @modelcontextprotocol/inspector
 ```
 
 ---
 
-## 📦 MCP Integration
+## MCP Integration
 
 ### Transport: Stdio
 qwen-core uses **stdio transport** for maximum compatibility:
@@ -273,27 +255,7 @@ qwen-core uses **stdio transport** for maximum compatibility:
 
 ---
 
-## 🧠 Second Brain Integration
-
-All fixes, patterns, and learnings are documented in `~/Second-brain/`:
-
-```
-~/Second-brain/
-├── wiki/
-│   ├── Qwen-Core.md          # This project's knowledge base
-│   ├── MCP-Protocol.md       # MCP implementation notes
-│   └── Tool-Patterns.md      # Reusable tool patterns
-├── logs/
-│   └── debug-*.log          # Execution traces
-└── projects/
-    └── qwen-core/           # Project-specific context
-```
-
-**After solving a complex bug, save the solution to the wiki immediately.**
-
----
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feat/amazing-tool`
@@ -309,10 +271,10 @@ All fixes, patterns, and learnings are documented in `~/Second-brain/`:
 
 ---
 
-## 📄 License
+## License
 
-MIT © 2024 Youssef. Built for the top 0.1% engineer journey. 🚀
+MIT © 2026 Youssef. Built for the top 0.1% engineer journey.
 
 ---
 
-> 💡 **Pro Tip**: Use `sequential_thinking` for complex tasks. It helps the agent plan before acting, reducing errors and improving output quality.
+> **Pro Tip**: Use `sequential_thinking` for complex tasks. It helps the agent plan before acting, reducing errors and improving output quality.
