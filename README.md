@@ -1,5 +1,10 @@
 # qwen-core
 
+![Version](https://img.shields.io/github/package-json/v/youssefvdel/qwen-core?label=Version&color=blue)
+![License](https://img.shields.io/github/license/youssefvdel/qwen-core?color=green)
+![Platform](https://img.shields.io/badge/Platform-Node.js%2018%2B%20%7C%20TypeScript-blue)
+![Stars](https://img.shields.io/github/stars/youssefvdel/qwen-core?style=social)
+
 A high-performance Model Context Protocol (MCP) server that enables autonomous, tool-driven AI assistance for software development.
 
 ## Overview
