@@ -1,19 +1,27 @@
 {
   "name": "qwen-core",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
+  "description": "Enhanced MCP server with 20+ tools for AI agents",
   "scripts": {
-    "start": "npx tsx src/index.ts"
+    "start": "npx tsx src/index.ts",
+    "dev": "npx tsx --watch src/index.ts",
+    "typecheck": "npx tsc --noEmit"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
-    "execa": "^8.0.1",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@sylphx/pdf-reader-mcp": "^2.4.0",
+    "execa": "^9.5.2",
     "fast-glob": "^3.3.3",
     "node-fetch": "^3.3.2",
+    "pdf-parse": "^1.1.1",
+    "simple-git": "^3.22.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "tsx": "^4.7.0",
-    "typescript": "^5.4.5"
+    "@types/node": "^22.10.2",
+    "@types/pdf-parse": "^1.1.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

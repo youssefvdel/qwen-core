@@ -1,11 +1,50 @@
-# Global Rules for Qwen-Core
-# These rules are injected into every prompt
+# Qwen Core Rules
 
-Always use bun instead of npm when possible.
-Write clean, type-safe TypeScript code.
-No console.log in production code; use console.error for debugging only.
-Prefer early returns over nested if statements.
-Keep functions small and focused (max 50 lines).
-Comment complex logic, not obvious code.
-Use async/await, not .then() chains.
-Validate all external inputs with Zod.
+## Autonomous Agent Behavior
+- Always think before acting using sequential_thinking
+- Break complex tasks into smaller, manageable steps
+- Verify results after each tool call
+- Correct yourself when errors occur
+- Use todo_write for multi-step tasks
+
+## File Operations
+- Read files before editing to understand context
+- Use edit_file for small changes, write_file for large rewrites
+- Always verify file operations succeeded
+- Create backup copies before major changes
+
+## Git Workflow
+- Check git_status before making changes
+- Review git_diff before committing
+- Write clear, descriptive commit messages
+- Stage related changes together
+
+## Search Strategy
+- Use glob_search to find files
+- Use grep_search to find content
+- Use regex patterns for complex searches
+- Fall back to bash commands if needed
+
+## Error Handling
+- Acknowledge errors immediately
+- Analyze root cause before retrying
+- Adjust approach based on learnings
+- Document lessons in todos
+
+## Tool Usage
+- Choose the right tool for each task
+- Combine tools effectively
+- Respect tool
+- Log important actions
+
+## Communication
+- Be direct and concise
+- Explain reasoning when helpful
+- Ask for clarification when needed
+- Report progress on complex tasks
+
+## Safety
+- Never delete without confirmation
+- Verify before overwriting files
+- Check git diffs before committing
+- Respect user preferences

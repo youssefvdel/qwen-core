@@ -1,26 +1,46 @@
-# qwen-core
+# qwen-core v2.0
 
 ![Version](https://img.shields.io/github/package-json/v/youssefvdel/qwen-core?label=Version&color=blue)
 ![License](https://img.shields.io/github/license/youssefvdel/qwen-core?color=green)
 ![Platform](https://img.shields.io/badge/Platform-Node.js%2018%2B%20%7C%20TypeScript-blue)
-![Stars](https://img.shields.io/github/stars/youssefvdel/qwen-core?style=social)
+![Tools](https://img.shields.io/badge/Tools-21%2B-red)
+![Prompts](https://img.shields.io/badge/Prompts-3-purple)
 
-A high-performance Model Context Protocol (MCP) server that enables autonomous, tool-driven AI assistance for software development.
+**Autonomous AI Agent MCP Server** - Enhanced with 21 tools, 3 prompts, and auto-loading skills for self-directed task completion.
 
-## Overview
+## 🚀 Overview
 
-qwen-core transforms Qwen Desktop into a fully agentic coding assistant by providing native tool execution, structured reasoning, and extensible skill definitions. It is designed for developers who need reliable, automated workflows that act first and explain later.
+qwen-core transforms AI assistants into **autonomous agents** that can:
+- 🧠 **Think** before acting using structured reasoning
+- 📋 **Plan** complex tasks with todo tracking
+- 🔧 **Act** using 21 specialized tools
+- 👁️ **Observe** and verify results
+- 🔄 **Correct** themselves when errors occur
 
-## Features
+## ✨ New in v2.0
 
-- **Autonomous Agent Loop**: Implements a ReAct-style cycle (Think → Act → Observe → Reflect) for self-directed task completion
-- **11 Native Tools**: File I/O, shell execution, content search, web access, and structured reasoning capabilities
-- **Claude Code Skills Integration**: Load specialized instruction sets from `~/.agents/` for domain-specific workflows
-- **Rules Engine**: Enforce project-specific coding standards via a `.qwenrules` configuration file
-- **Self-Healing Execution**: Automatic error detection, retry logic, and fallback strategies
-- **Standard MCP Compliance**: Uses stdio transport for maximum compatibility with MCP clients
+### Autonomous Agent System
+- **3 Prompt Templates**: Pre-built system prompts for agent behavior
+- **Auto-Loading Skills**: Skills from `~/.agents/skills/`, `./skills/`, `./.qwen/skills/`
+- **Self-Correction Protocol**: Built-in error recovery patterns
+- **Sequential Thinking**: Structured reasoning steps
 
-## Installation
+### New Tools (10 Added)
+| Category | Tools |
+|----------|-------|
+| **Git** | `git_status`, `git_diff`, `git_commit`, `git_add`, `git_log` |
+| **Time** | `get_current_time`, `convert_time` |
+| **PDF** | `read_pdf` |
+| **Enhanced** | Improved `bash`, `edit_file`, `grep_search` |
+
+### Skills System
+Pre-built skills included:
+- `autonomous-agent` - Core agent behavior (auto-loaded)
+- `tdd` - Test-Driven Development workflow
+- `git` - Git best practices
+- `security-review` - Security auditing
+
+## 📦 Installation
 
 ```bash
 git clone https://github.com/youssefvdel/qwen-core.git
@@ -28,245 +48,305 @@ cd qwen-core
 npm install
 ```
 
-## Requirements
+## 🔧 Configuration
 
-- Node.js 18+ or Bun
-- `npx` (for `tsx` execution)
-- `ripgrep` (optional, required for `grep_search` tool)
-
-## Configuration
-
-Add the following to your MCP client configuration (e.g., Qwen Desktop settings):
-
+### Claude Desktop
 ```json
 {
   "mcpServers": {
     "qwen-core": {
       "command": "npx",
-      "args": ["--yes", "tsx", "<PATH_TO_QWEN_CORE>/src/index.ts"],
-      "env": {
-        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      "args": ["tsx", "src/index.ts"],
+      "cwd": "/path/to/qwen-core"
+    }
+  }
+}
+```
+
+### VS Code
+```json
+{
+  "mcp": {
+    "servers": {
+      "qwen-core": {
+        "command": "npx",
+        "args": ["tsx", "src/index.ts"]
       }
     }
   }
 }
 ```
 
-Replace `<PATH_TO_QWEN_CORE>` with the absolute path to your cloned repository.
+## 🛠️ Available Tools (21)
 
-## Available Tools
+### File Operations (4)
+| Tool | Description |
+|------|-------------|
+| `read_file` | Read file contents with encoding support |
+| `write_file` | Create/overwrite files (auto-creates directories) |
+| `edit_file` | Search-replace with `replaceAll` option |
+| `glob_search` | Find files by glob pattern |
 
-### File Operations
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `file_read` | `path: string` | Read file contents with UTF-8 encoding |
-| `file_write` | `path: string, content: string` | Create or overwrite a file |
-| `file_edit` | `path: string, oldText: string, newText: string` | Perform search-and-replace in a file |
+### Search & Discovery (2)
+| Tool | Description |
+|------|-------------|
+| `grep_search` | Search content with regex (ripgrep/grep) |
+| `glob_search` | Pattern-based file discovery |
 
-### Search & Discovery
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `glob_search` | `pattern: string, cwd?: string` | Find files matching a glob pattern |
-| `grep_search` | `pattern: string, path?: string, caseSensitive?: boolean` | Search file contents using ripgrep |
+### Shell & Web (3)
+| Tool | Description |
+|------|-------------|
+| `bash` | Execute commands with timeout/cwd |
+| `web_fetch` | Fetch URLs and extract content |
+| `web_search` | DuckDuckGo web search |
 
-### Shell Execution
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `bash_execute` | `command: string, cwd?: string` | Execute a shell command (30 second timeout) |
+### Git Operations (5) 🆕
+| Tool | Description |
+|------|-------------|
+| `git_status` | Show working tree status |
+| `git_diff` | Show staged/unstaged/compare diffs |
+| `git_commit` | Commit with message |
+| `git_add` | Stage files |
+| `git_log` | View commit history |
 
-### Web Access
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `web_fetch` | `url: string` | Retrieve raw content from a URL |
-| `web_search` | `query: string, numResults?: number` | Perform web searches via DuckDuckGo API |
+### Time Operations (2) 🆕
+| Tool | Description |
+|------|-------------|
+| `get_current_time` | Get time in specific timezone |
+| `convert_time` | Convert between timezones |
 
-### Agent & Interaction
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `sequential_thinking` | `thought: string, step: number, total: number` | Log structured reasoning steps |
-| `todo_write` | `todos: Array<{content: string, status: string}>` | Manage structured task lists |
-| `ask_user` | `question: string` | Prompt for user input during execution |
+### PDF Processing (1) 🆕
+| Tool | Description |
+|------|-------------|
+| `read_pdf` | Extract text, metadata, images from PDFs |
 
-## Usage Examples
+### Agent & Interaction (4)
+| Tool | Description |
+|------|-------------|
+| `todo_write` | Manage task lists with statuses |
+| `ask_user` | Prompt for user input |
+| `sequential_thinking` | Structured reasoning steps |
+| `bash` | System commands |
 
-Once connected to an MCP client, qwen-core automatically registers all tools. Example interactions:
+### Skills System (3)
+| Tool | Description |
+|------|-------------|
+| `list_skills` | List installed skills |
+| `load_skill` | Load skill instructions |
+| `skill_info` | Get skill metadata |
 
+## 🧠 Prompt Templates (3)
+
+### `autonomous-agent`
+System prompt that teaches the model:
+- Think-Plan-Act-Observe-Correct cycle
+- Tool usage patterns
+- Error recovery
+- Safety rules
+
+**Usage**: Automatically applied or via `/prompt autonomous-agent`
+
+### `skill-loader`
+Loads skills from:
+- `~/.agents/skills/{name}/SKILL.md`
+- `./skills/{name}/SKILL.md`
+- `./.qwen/skills/{name}/SKILL.md`
+
+**Usage**: `/prompt skill-loader {"skillName": "tdd"}`
+
+### `task-planner`
+Breaks down complex tasks into sequential steps.
+
+**Usage**: `/prompt task-planner {"task": "Refactor auth module"}`
+
+## 📁 Skills System
+
+### Folder Structure
 ```
-User: List all TypeScript files in the current directory
-Agent: Calls glob_search(pattern="**/*.ts") → Returns file list
-
-User: Read the contents of package.json
-Agent: Calls file_read(path="./package.json") → Returns file content
-
-User: Search for TODO comments across the codebase
-Agent: Calls grep_search(pattern="TODO") → Returns matching lines
+qwen-core/
+├── skills/                    # Project-specific skills
+│   ├── autonomous-agent/
+│   │   └── SKILL.md          # Auto-loaded agent behavior
+│   ├── tdd/
+│   │   └── SKILL.md          # TDD workflow
+│   ├── git/
+│   │   └── SKILL.md          # Git best practices
+│   └── security-review/
+│       └── SKILL.md          # Security auditing
+└── .qwenrules                 # Project rules
 ```
 
-## Rules Engine
+### Auto-Load Locations
+1. `~/.agents/skills/` - Global Claude Code skills
+2. `./skills/` - Project-specific skills
+3. `./.qwen/skills/` - Alternative project skills
 
-Create a `.qwenrules` file in your project root to enforce coding standards and workflow constraints:
+### Creating Skills
+```markdown
+name: my-skill
+description: "What this skill does"
+triggers: ["keyword1", "keyword2"]
 
+## Instructions
+- Step 1
+- Step 2
+- Step 3
+
+## Examples
+Example usage here
+```
+
+## 🔄 Autonomous Agent Protocol
+
+### 1. THINK
+```
+sequential_thinking: "I need to understand the codebase first"
+```
+
+### 2. PLAN
+```
+todo_write: [
+  {content: "Read main module", status: "pending"},
+  {content: "Identify issues", status: "pending"},
+  {content: "Fix bugs", status: "pending"},
+  {content: "Test changes", status: "pending"}
+]
+```
+
+### 3. ACT
+```
+glob_search: "**/*.ts"
+read_file: "src/main.ts"
+```
+
+### 4. OBSERVE
+```
+Check results, verify correctness
+```
+
+### 5. CORRECT
+```
+If error: Analyze → Adjust → Retry → Verify
+```
+
+## 📋 Rules Engine
+
+Create `.qwenrules` in project root:
 ```text
-# .qwenrules
-# Comments start with #
+# Coding standards
+Always use TypeScript strict mode
+No console.log in production code
 
-# Style rules
-Always use TypeScript strict mode.
-No console.log in production code.
-Prefer async/await over promises.
+# Security
+Never commit .env files
+Sanitize all user inputs
 
-# Security rules
-Never commit .env files.
-Sanitize all user inputs.
-
-# Workflow rules
-Run tests before committing.
-Use conventional commits.
+# Workflow
+Run tests before committing
+Use conventional commits
 ```
 
-Rules are automatically injected into every agent request.
-
-## Skills System
-
-qwen-core supports loading specialized instruction sets from the `~/.agents/` directory:
+## 🧪 Development
 
 ```bash
-# List available skills
-/list_skills
+# Install dependencies
+npm install
 
-# Load a skill
-/load_skill { "name": "tdd" }
+# Run in dev mode
+npm run dev
 
-# Get skill metadata
-/skill_info { "name": "git" }
+# Type check
+npm run typecheck
+
+# Start server
+npm start
 ```
 
-### Example Skill Definition
+## 📊 Example Usage
 
-```yaml
-# ~/.agents/skills/tdd/SKILL.md
-name: tdd
-description: "Test-Driven Development expert"
-instructions: |
-  - Write tests before implementation
-  - Use AAA pattern (Arrange-Act-Assert)
-  - Keep tests isolated and fast
-  - Refactor only when tests pass
+### Autonomous Bug Fix
+```
+User: "Fix the authentication bug"
+
+Agent Flow:
+1. sequential_thinking: "Let me find the auth module"
+2. glob_search: "**/*auth*.ts"
+3. read_file: "src/auth.ts"
+4. grep_search: "TODO|FIXME|BUG"
+5. sequential_thinking: "Found null check missing"
+6. edit_file: Add null check
+7. read_file: Verify fix
+8. git_diff: Review changes
+9. git_add + git_commit: Commit
+10. Report completion
 ```
 
-## Architecture
+### Using Skills
+```
+User: "Add tests for the new feature"
+
+Agent:
+1. load_skill: {"name": "tdd"}
+2. Follows TDD workflow:
+   - Write failing test
+   - Make it pass
+   - Refactor
+```
+
+## 🏗️ Architecture
 
 ```
 qwen-core/
 ├── src/
-│   ├── index.ts              # MCP server entry point
+│   ├── index.ts              # Main server (tools + prompts)
 │   ├── agent/
-│   │   ├── QueryEngine.ts    # ReAct loop implementation
-│   │   ├── PermissionSystem.ts # Safety checks
-│   │   └── SessionManager.ts  # Conversation persistence
-│   ├── tools/
-│   │   ├── BashTool.ts       # Shell execution
-│   │   ├── FileReadTool.ts   # File operations
-│   │   ├── GrepTool.ts       # Content search
-│   │   └── ...               # All 11 tools
-│   └── system/
-│       ├── RulesEngine.ts    # .qwenrules parser
-│       └── SkillLoader.ts    # ~.agents/ integration
-├── skills/                   # Local skill definitions
+│   │   ├── ToolRegistry.ts   # Tool management
+│   │   └── SessionManager.ts # Session persistence
+│   └── tools/                # Individual tool implementations
+├── skills/                   # Skill definitions
+│   ├── autonomous-agent/
+│   ├── tdd/
+│   ├── git/
+│   └── security-review/
 ├── .qwenrules               # Project rules
-├── package.json
-└── README.md
+└── package.json
 ```
 
-### Agent Execution Flow
+## 🔒 Safety Features
 
-1. User sends a message or task
-2. QueryEngine injects system prompt, active rules, and loaded skills
-3. LLM decides whether to respond directly or call a tool
-4. If a tool is called: execute → capture result → feed back to LLM
-5. Loop continues until a final answer is produced or max iterations (15) is reached
-6. Response is returned to the user
+- Read-before-edit verification
+- Git diff review before commits
+- Timeout on bash commands (30s default)
+- Error isolation and recovery
+- User confirmation for destructive ops
 
-## Development
+## 📈 Performance
 
-### Project Setup
+- Parallel tool execution support
+- Efficient file caching
+- Smart search fallbacks (ripgrep → grep)
+- Optimized PDF parsing
 
-```bash
-npm install -D tsx @types/node
-npx tsx --watch src/index.ts
-npx tsc --noEmit
-```
-
-### Adding a New Tool
-
-1. Create `src/tools/MyNewTool.ts`
-2. Implement the tool logic with a Zod schema for input validation
-3. Register the tool in `src/index.ts`:
-
-```typescript
-server.tool("my_new_tool", {
-  param: z.string()
-}, async ({ param }) => {
-  return { content: [{ type: "text", text: "Result" }] };
-});
-```
-
-### Testing
-
-```bash
-echo '{"method":"tools/list"}' | npx tsx src/index.ts
-npx @modelcontextprotocol/inspector
-```
-
-## MCP Integration
-
-### Transport: Stdio
-
-qwen-core uses stdio transport for maximum compatibility:
-- Works with any MCP-compliant client
-- No network overhead or configuration
-- Secure execution (local process only)
-
-### Message Format
-
-```json
-// Request
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "bash_execute",
-    "arguments": { "command": "ls -la" }
-  }
-}
-
-// Response
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [{ "type": "text", "text": "total 48\n..." }]
-  }
-}
-```
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/amazing-tool`
-3. Implement and test your changes
-4. Run type checking: `npx tsc --noEmit`
-5. Submit a pull request with a clear description of changes
+2. Create feature branch: `git checkout -b feat/new-tool`
+3. Implement and test
+4. Run typecheck: `npm run typecheck`
+5. Submit PR
 
-### Code Style
+## 📄 License
 
-- TypeScript strict mode enabled
-- JSDoc comments for public APIs
-- Meaningful commit messages (conventional commits recommended)
+MIT License - See LICENSE file
 
-## License
+## 🙏 Credits
 
-MIT License. See LICENSE file for details.
+Built with:
+- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/sdk)
+- [simple-git](https://github.com/steveukx/git-js)
+- [pdf-parse](https://www.npmjs.com/package/pdf-parse)
+- [execa](https://github.com/sindresorhus/execa)
 
-Copyright (c) 2026 qwen-core contributors
+---
+
+**qwen-core v2.0** - Making AI agents truly autonomous 🚀
