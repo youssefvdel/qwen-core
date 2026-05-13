@@ -285,6 +285,171 @@ const TOOLS = [
       },
       required: ["name"]
     }
+  },
+  // Enhanced Filesystem Tools (from @modelcontextprotocol/server-filesystem)
+  {
+    name: "read_text_file",
+    description: "Read complete contents of a file as text with optional line limits",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File path to read" },
+        head: { type: "number", description: "Read only first N lines" },
+        tail: { type: "number", description: "Read only last N lines" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "read_multiple_files",
+    description: "Read multiple files simultaneously",
+    inputSchema: {
+      type: "object",
+      properties: {
+        paths: { type: "array", items: { type: "string" }, description: "Array of file paths" }
+      },
+      required: ["paths"]
+    }
+  },
+  {
+    name: "list_directory",
+    description: "List directory contents with [FILE] or [DIR] prefixes",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Directory path to list" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "list_directory_with_sizes",
+    description: "List directory contents with file sizes and summary statistics",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Directory path to list" },
+        sortBy: { type: "string", enum: ["name", "size"], description: "Sort entries by name or size" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "directory_tree",
+    description: "Get recursive JSON tree structure of directory contents",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Starting directory" },
+        excludePatterns: { type: "array", items: { type: "string" }, description: "Glob patterns to exclude" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "create_directory",
+    description: "Create new directory or ensure it exists (creates parents if needed)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Directory path to create" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "move_file",
+    description: "Move or rename files and directories",
+    inputSchema: {
+      type: "object",
+      properties: {
+        source: { type: "string", description: "Source file/directory path" },
+        destination: { type: "string", description: "Destination path" }
+      },
+      required: ["source", "destination"]
+    }
+  },
+  {
+    name: "search_files",
+    description: "Recursively search for files/directories matching patterns",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Starting directory" },
+        pattern: { type: "string", description: "Search pattern (glob-style)" },
+        excludePatterns: { type: "array", items: { type: "string" }, description: "Patterns to exclude" }
+      },
+      required: ["path", "pattern"]
+    }
+  },
+  {
+    name: "get_file_info",
+    description: "Get detailed file/directory metadata (size, dates, permissions)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File or directory path" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "delete_file",
+    description: "Delete a file",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File path to delete" }
+      },
+      required: ["path"]
+    }
+  },
+  {
+    name: "delete_directory",
+    description: "Delete a directory and its contents",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Directory path to delete" },
+        recursive: { type: "boolean", description: "Delete recursively (default: true)" }
+      },
+      required: ["path"]
+    }
+  },
+  // Desktop Commander Tools (system commands)
+  {
+    name: "execute_command",
+    description: "Execute system command with output capture (alias for bash)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "Command to execute" },
+        cwd: { type: "string", description: "Working directory" }
+      },
+      required: ["command"]
+    }
+  },
+  {
+    name: "list_processes",
+    description: "List running processes",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filter: { type: "string", description: "Filter pattern for process names" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "kill_process",
+    description: "Terminate a running process by PID",
+    inputSchema: {
+      type: "object",
+      properties: {
+        pid: { type: "number", description: "Process ID to kill" }
+      },
+      required: ["pid"]
+    }
   }
 ];
 
@@ -570,6 +735,163 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
       
+      // Enhanced Filesystem Tools
+      case "read_text_file": {
+        let content = await fs.readFile(a.path, "utf-8");
+        if (a.head && !a.tail) {
+          content = content.split('\n').slice(0, a.head).join('\n');
+        } else if (a.tail && !a.head) {
+          content = content.split('\n').slice(-a.tail).join('\n');
+        }
+        return { content: [{ type: "text", text: content }] };
+      }
+      
+      case "read_multiple_files": {
+        const results = [];
+        for (const p of a.paths) {
+          try {
+            const content = await fs.readFile(p, "utf-8");
+            results.push(`=== ${p} ===\n${content}`);
+          } catch (e: any) {
+            results.push(`=== ${p} ===\n❌ Error: ${e.message}`);
+          }
+        }
+        return { content: [{ type: "text", text: results.join('\n\n') }] };
+      }
+      
+      case "list_directory": {
+        const entries = await fs.readdir(a.path, { withFileTypes: true });
+        const output = entries.map(e => e.isDirectory() ? `[DIR]  ${e.name}` : `[FILE] ${e.name}`).sort().join('\n');
+        return { content: [{ type: "text", text: output || "Empty directory" }] };
+      }
+      
+      case "list_directory_with_sizes": {
+        const entries = await fs.readdir(a.path, { withFileTypes: true });
+        const items = [];
+        let totalSize = 0;
+        let fileCount = 0;
+        
+        for (const e of entries) {
+          const fullPath = path.join(a.path, e.name);
+          try {
+            const stats = await fs.stat(fullPath);
+            if (e.isFile()) {
+              totalSize += stats.size;
+              fileCount++;
+              items.push({ name: e.name, type: 'file', size: stats.size, modified: stats.mtime });
+            } else {
+              items.push({ name: e.name, type: 'directory', size: 0, modified: stats.mtime });
+            }
+          } catch {}
+        }
+        
+        if (a.sortBy === "size") {
+          items.sort((a, b) => b.size - a.size);
+        } else {
+          items.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        
+        const output = items.map(i => 
+          i.type === 'file' 
+            ? `[FILE] ${i.name} (${(i.size / 1024).toFixed(1)} KB)`
+            : `[DIR]  ${i.name}`
+        ).join('\n');
+        
+        return { 
+          content: [{ 
+            type: "text", 
+            text: `${output}\n\n📊 Summary: ${fileCount} files, ${(totalSize / 1024).toFixed(1)} KB total` 
+          }] 
+        };
+      }
+      
+      case "directory_tree": {
+        async function buildTree(dirPath: string, depth = 0): Promise<any[]> {
+          const entries = await fs.readdir(dirPath, { withFileTypes: true });
+          const result = [];
+          
+          for (const e of entries) {
+            if (e.isDirectory()) {
+              const children = await buildTree(path.join(dirPath, e.name), depth + 1);
+              result.push({ name: e.name, type: 'directory', children });
+            } else {
+              result.push({ name: e.name, type: 'file' });
+            }
+          }
+          
+          return result;
+        }
+        
+        const tree = await buildTree(a.path);
+        return { content: [{ type: "text", text: JSON.stringify(tree, null, 2) }] };
+      }
+      
+      case "create_directory": {
+        await fs.mkdir(a.path, { recursive: true });
+        return { content: [{ type: "text", text: `✅ Created: ${a.path}` }] };
+      }
+      
+      case "move_file": {
+        await fs.rename(a.source, a.destination);
+        return { content: [{ type: "text", text: `✅ Moved: ${a.source} → ${a.destination}` }] };
+      }
+      
+      case "search_files": {
+        const matches = await fg(a.pattern, { 
+          cwd: a.path, 
+          ignore: a.excludePatterns || [],
+          absolute: true 
+        });
+        return { content: [{ type: "text", text: matches.length ? matches.join('\n') : "No matches" }] };
+      }
+      
+      case "get_file_info": {
+        const stats = await fs.stat(a.path);
+        const info = {
+          path: a.path,
+          type: stats.isFile() ? "file" : "directory",
+          size: stats.size,
+          created: stats.birthtime,
+          modified: stats.mtime,
+          accessed: stats.atime,
+          permissions: stats.mode.toString(8).slice(-3)
+        };
+        return { content: [{ type: "text", text: JSON.stringify(info, null, 2) }] };
+      }
+      
+      case "delete_file": {
+        await fs.unlink(a.path);
+        return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
+      }
+      
+      case "delete_directory": {
+        await fs.rm(a.path, { recursive: a.recursive !== false, force: true });
+        return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
+      }
+      
+      // Desktop Commander Tools
+      case "execute_command": {
+        const { stdout, stderr } = await execa(a.command, { 
+          shell: true, 
+          cwd: a.cwd || process.cwd(), 
+          timeout: 30000 
+        });
+        return { content: [{ type: "text", text: stdout || stderr || "✅ Done" }] };
+      }
+      
+      case "list_processes": {
+        const { stdout } = await execa("ps", ["aux"]);
+        const lines = a.filter 
+          ? stdout.split('\n').filter(l => l.includes(a.filter))
+          : stdout.split('\n');
+        return { content: [{ type: "text", text: lines.slice(0, 50).join('\n') || "No processes found" }] };
+      }
+      
+      case "kill_process": {
+        await execa("kill", [String(a.pid)]);
+        return { content: [{ type: "text", text: `✅ Killed process ${a.pid}` }] };
+      }
+      
       default:
         return { 
           content: [{ type: "text", text: `❌ Unknown tool: ${name}` }], 
@@ -775,8 +1097,8 @@ async function main() {
   console.error("🌐 qwen-core v2.0.0 starting...");
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("✅ Ready - 21 tools + 3 prompts loaded");
-  console.error("📦 Categories: File, Search, Web, Git, Time, PDF, Skills");
+  console.error("✅ Ready - 40 tools + 3 prompts loaded");
+  console.error("📦 Categories: File (15), Search (2), Web (2), Git (5), Time (2), PDF (1), System (3), Skills (3), Agent (7)");
   console.error("🧠 Prompts: autonomous-agent, skill-loader, task-planner");
   console.error("📁 Skills auto-load from: ~/.agents/skills/, ./skills/, ./.qwen/skills/");
 }

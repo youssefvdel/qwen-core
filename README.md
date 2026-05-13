@@ -3,42 +3,39 @@
 ![Version](https://img.shields.io/github/package-json/v/youssefvdel/qwen-core?label=Version&color=blue)
 ![License](https://img.shields.io/github/license/youssefvdel/qwen-core?color=green)
 ![Platform](https://img.shields.io/badge/Platform-Node.js%2018%2B%20%7C%20TypeScript-blue)
-![Tools](https://img.shields.io/badge/Tools-21%2B-red)
+![Tools](https://img.shields.io/badge/Tools-40-red)
 ![Prompts](https://img.shields.io/badge/Prompts-3-purple)
 
-**Autonomous AI Agent MCP Server** - Enhanced with 21 tools, 3 prompts, and auto-loading skills for self-directed task completion.
+**All-in-One MCP Server** - 40 tools including filesystem, web, git, system commands, time, PDF, and autonomous agent capabilities.
 
 ## 🚀 Overview
 
 qwen-core transforms AI assistants into **autonomous agents** that can:
 - 🧠 **Think** before acting using structured reasoning
 - 📋 **Plan** complex tasks with todo tracking
-- 🔧 **Act** using 21 specialized tools
+- 🔧 **Act** using 40 specialized tools (filesystem, web, git, system, and more)
 - 👁️ **Observe** and verify results
 - 🔄 **Correct** themselves when errors occur
 
 ## ✨ New in v2.0
 
-### Autonomous Agent System
-- **3 Prompt Templates**: Pre-built system prompts for agent behavior
-- **Auto-Loading Skills**: Skills from `~/.agents/skills/`, `./skills/`, `./.qwen/skills/`
-- **Self-Correction Protocol**: Built-in error recovery patterns
-- **Sequential Thinking**: Structured reasoning steps
+### Complete Tool Integration
+- **40 Total Tools**: Combines filesystem, fetch, desktop-commander, and custom tools
+- **No External Dependencies**: Everything you need in one MCP server
+- **Unified Interface**: Consistent tool patterns and error handling
 
-### New Tools (10 Added)
-| Category | Tools |
-|----------|-------|
-| **Git** | `git_status`, `git_diff`, `git_commit`, `git_add`, `git_log` |
-| **Time** | `get_current_time`, `convert_time` |
-| **PDF** | `read_pdf` |
-| **Enhanced** | Improved `bash`, `edit_file`, `grep_search` |
-
-### Skills System
-Pre-built skills included:
-- `autonomous-agent` - Core agent behavior (auto-loaded)
-- `tdd` - Test-Driven Development workflow
-- `git` - Git best practices
-- `security-review` - Security auditing
+### Tool Categories
+| Category | Count | Tools |
+|----------|-------|-------|
+| **Filesystem** | 12 | `read_file`, `read_text_file`, `read_multiple_files`, `write_file`, `edit_file`, `list_directory`, `list_directory_with_sizes`, `directory_tree`, `create_directory`, `move_file`, `delete_file`, `delete_directory` |
+| **Search** | 3 | `glob_search`, `grep_search`, `search_files` |
+| **Web** | 2 | `web_fetch`, `web_search` |
+| **Git** | 5 | `git_status`, `git_diff`, `git_commit`, `git_add`, `git_log` |
+| **System** | 4 | `bash`, `execute_command`, `list_processes`, `kill_process` |
+| **Time** | 2 | `get_current_time`, `convert_time` |
+| **PDF** | 1 | `read_pdf` |
+| **Info** | 1 | `get_file_info` |
+| **Agent** | 7 | `todo_write`, `ask_user`, `sequential_thinking`, `list_skills`, `load_skill`, `skill_info` |
 
 ## 📦 Installation
 
