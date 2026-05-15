@@ -2,12 +2,41 @@
   "name": "qwen-core",
   "version": "2.0.0",
   "type": "module",
-  "description": "Enhanced MCP server with 20+ tools for AI agents",
+  "description": "Enhanced MCP server with 40+ tools for AI agents",
+  "main": "src/index.ts",
+  "bin": {
+    "qwen-core": "./bin/qwen-core"
+  },
+  "files": [
+    "src",
+    "bin",
+    "skills",
+    "README.md",
+    "LICENSE",
+    "tsconfig.json"
+  ],
   "scripts": {
     "start": "npx tsx src/index.ts",
     "dev": "npx tsx --watch src/index.ts",
-    "typecheck": "npx tsc --noEmit"
+    "typecheck": "npx tsc --noEmit",
+    "prepublishOnly": "npm run typecheck 2>/dev/null || true",
+    "postinstall": "chmod +x src/index.ts 2>/dev/null || true"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youssefvdel/qwen-core.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agent",
+    "tools",
+    "qwen",
+    "qwen-studio"
+  ],
+  "author": "youssefvdel",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@sylphx/pdf-reader-mcp": "^2.4.0",
@@ -23,5 +52,11 @@
     "@types/pdf-parse": "^1.1.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

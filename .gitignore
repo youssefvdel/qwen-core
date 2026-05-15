@@ -1,12 +1,11 @@
 # Dependencies
 node_modules/
-*.log
 
 # Build output
 dist/
-out/
-build/
-*.d.ts
+
+# Logs
+*.log
 
 # Environment
 .env
@@ -23,12 +22,6 @@ build/
 .DS_Store
 Thumbs.db
 
-# Second Brain (keep local)
-.Second-brain/
-
-# MCP sessions (regenerates)
-.qwen-sessions/
-
 # Coverage
 coverage/
 *.lcov
@@ -40,4 +33,3 @@ temp/
 
 # GitHub
 .github/
-.obsidian/
