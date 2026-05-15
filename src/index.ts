@@ -11,8 +11,9 @@ import simpleGit from "simple-git";
 import { z } from "zod";
 import { initAllowedDirs, getPathRestrictionMessage } from "./utils/PathValidator.js";
 import { getTimeoutDescription } from "./utils/TimeoutEstimator.js";
+import pkg from "../package.json" with { type: "json" };
 
-const server = new Server({ name: "qwen-core", version: "2.0.0" }, { capabilities: { tools: {}, prompts: {} } });
+const server = new Server({ name: "qwen-core", version: pkg.version }, { capabilities: { tools: {}, prompts: {} } });
 
 const TOOLS = [
   {
@@ -2408,7 +2409,7 @@ Track progress with todo_write.`
 });
 
 async function main() {
-  console.error("🌐 qwen-core v2.0.0 starting...");
+  console.error(`🌐 qwen-core v${pkg.version} starting...`);
   
   // Initialize path validation
   initAllowedDirs();
