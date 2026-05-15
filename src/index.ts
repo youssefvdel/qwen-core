@@ -11,14 +11,24 @@ import simpleGit from "simple-git";
 import { z } from "zod";
 import { initAllowedDirs, getPathRestrictionMessage } from "./utils/PathValidator.js";
 import { getTimeoutDescription } from "./utils/TimeoutEstimator.js";
+import { sanitizeOutput, sanitizeError } from "./utils/SanitizeToolOutput.js";
 import pkg from "../package.json" with { type: "json" };
+
+// Helper to create safe tool responses
+function safeResponse(text: string) {
+  return { content: [{ type: "text" as const, text: sanitizeOutput(text) }] };
+}
+
+function safeErrorResponse(text: string) {
+  return { content: [{ type: "text" as const, text: sanitizeError(text) }], isError: true };
+}
 
 const server = new Server({ name: "qwen-core", version: pkg.version }, { capabilities: { tools: {}, prompts: {} } });
 
 const TOOLS = [
-  {
-    name: "bash",
-    description: `Execute shell commands with timeout and working directory support.
+ {
+ name: "bash",
+ description: `Execute shell commands with timeout and working directory support.
 
 USAGE PATTERNS:
 - Install packages: bash { command: "npm install" }
@@ -42,19 +52,19 @@ COMMON COMMANDS:
 RELATED TOOLS:
 - Use before: read_file (verify file exists)
 - Use after: git_status (check changes)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        command: { type: "string", description: "Shell command to execute" },
-        cwd: { type: "string", description: "Working directory for command execution" },
-        timeout: { type: "number", description: "Timeout in milliseconds (default: 30000)" }
-      },
-      required: ["command"]
-    }
-  },
-  {
-    name: "read_file",
-    description: `Read complete file contents with UTF-8 encoding.
+ inputSchema: {
+ type: "object",
+ properties: {
+ command: { type: "string", description: "Shell command to execute" },
+ cwd: { type: "string", description: "Working directory for command execution" },
+ timeout: { type: "number", description: "Timeout in milliseconds (default: 30000)" }
+ },
+ required: ["command"]
+ }
+ },
+ {
+ name: "read_file",
+ description: `Read complete file contents with UTF-8 encoding.
 
 USAGE PATTERNS:
 - Read source code: read_file { path: "src/index.ts" }
@@ -78,18 +88,18 @@ RELATED TOOLS:
 - Use before: glob_search (find file path)
 - Use after: edit_file (verify changes)
 - Alternative: read_multiple_files (batch read)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Absolute or relative file path to read" },
-        encoding: { type: "string", description: "File encoding (default: utf-8)" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "write_file",
-    description: `Create new file or overwrite existing file completely.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Absolute or relative file path to read" },
+ encoding: { type: "string", description: "File encoding (default: utf-8)" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "write_file",
+ description: `Create new file or overwrite existing file completely.
 
 USAGE PATTERNS:
 - Create new file: write_file { path: "src/new.ts", content: "export const x = 1;" }
@@ -117,18 +127,18 @@ WHEN NOT TO USE:
 RELATED TOOLS:
 - Use before: read_file (check if exists), glob_search (find path)
 - Use after: read_file (verify content), bash (run linter)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "File path to create or overwrite" },
-        content: { type: "string", description: "Complete file content to write" }
-      },
-      required: ["path", "content"]
-    }
-  },
-  {
-    name: "edit_file",
-    description: `Search and replace text in a file with optional multiple replacements.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "File path to create or overwrite" },
+ content: { type: "string", description: "Complete file content to write" }
+ },
+ required: ["path", "content"]
+ }
+ },
+ {
+ name: "edit_file",
+ description: `Search and replace text in a file with optional multiple replacements.
 
 USAGE PATTERNS:
 - Single replace: edit_file { path: "src.ts", oldText: "const x = 1", newText: "const x = 2" }
@@ -157,20 +167,20 @@ ERROR PREVENTION:
 RELATED TOOLS:
 - REQUIRED before: read_file (get exact content)
 - Use after: read_file (verify changes), bash (run tests)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "File path to edit" },
-        oldText: { type: "string", description: "Exact text to find (include context for unique match)" },
-        newText: { type: "string", description: "Replacement text (preserve formatting)" },
-        replaceAll: { type: "boolean", description: "Replace all occurrences (default: false)" }
-      },
-      required: ["path", "oldText", "newText"]
-    }
-  },
-  {
-    name: "glob_search",
-    description: `Find files by glob pattern with working directory support.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "File path to edit" },
+ oldText: { type: "string", description: "Exact text to find (include context for unique match)" },
+ newText: { type: "string", description: "Replacement text (preserve formatting)" },
+ replaceAll: { type: "boolean", description: "Replace all occurrences (default: false)" }
+ },
+ required: ["path", "oldText", "newText"]
+ }
+ },
+ {
+ name: "glob_search",
+ description: `Find files by glob pattern with working directory support.
 
 USAGE PATTERNS:
 - Find TypeScript: glob_search { pattern: "**/*.ts" }
@@ -202,19 +212,19 @@ BEST PRACTICES:
 RELATED TOOLS:
 - Use before: list_directory (explore structure)
 - Use after: read_file (examine found files), grep_search (search content)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        pattern: { type: "string", description: "Glob pattern (e.g., '**/*.ts', 'src/**/*.tsx')" },
-        cwd: { type: "string", description: "Working directory for search" },
-        absolute: { type: "boolean", description: "Return absolute paths (default: false)" }
-      },
-      required: ["pattern"]
-    }
-  },
-  {
-    name: "grep_search",
-    description: `Search file contents using ripgrep (rg) or grep with regex support.
+ inputSchema: {
+ type: "object",
+ properties: {
+ pattern: { type: "string", description: "Glob pattern (e.g., '**/*.ts', 'src/**/*.tsx')" },
+ cwd: { type: "string", description: "Working directory for search" },
+ absolute: { type: "boolean", description: "Return absolute paths (default: false)" }
+ },
+ required: ["pattern"]
+ }
+ },
+ {
+ name: "grep_search",
+ description: `Search file contents using ripgrep (rg) or grep with regex support.
 
 USAGE PATTERNS:
 - Find function: grep_search { pattern: "function getUser" }
@@ -248,20 +258,20 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use before: glob_search (find which files to search)
 - Use after: read_file (examine specific matches)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        pattern: { type: "string", description: "Regex pattern to search for" },
-        path: { type: "string", description: "Directory to search (default: .)" },
-        caseSensitive: { type: "boolean", description: "Case sensitive search (default: false)" },
-        filePattern: { type: "string", description: "File glob filter (e.g., '*.ts', '*.tsx')" }
-      },
-      required: ["pattern"]
-    }
-  },
-  {
-    name: "todo_write",
-    description: `Manage a structured todo list for tracking task progress.
+ inputSchema: {
+ type: "object",
+ properties: {
+ pattern: { type: "string", description: "Regex pattern to search for" },
+ path: { type: "string", description: "Directory to search (default: .)" },
+ caseSensitive: { type: "boolean", description: "Case sensitive search (default: false)" },
+ filePattern: { type: "string", description: "File glob filter (e.g., '*.ts', '*.tsx')" }
+ },
+ required: ["pattern"]
+ }
+ },
+ {
+ name: "todo_write",
+ description: `Manage a structured todo list for tracking task progress.
 
 USAGE PATTERNS:
 - Create todos: todo_write { todos: [{ content: "Read codebase", status: "pending" }, { content: "Implement feature", status: "pending" }] }
@@ -295,37 +305,48 @@ EXAMPLE WORKFLOW:
 
 RELATED TOOLS:
 - Use with: sequential_thinking (plan steps), bash (execute steps)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        todos: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              content: { type: "string", description: "Task description" },
-              status: { type: "string", enum: ["pending", "in_progress", "done"], description: "Current status" }
-            },
-            required: ["content", "status"]
-          },
-          description: "Array of todo items"
-        }
-      },
-      required: ["todos"]
-    }
-  },
-  {
-    name: "sequential_thinking",
-    description: `A detailed tool for dynamic and reflective problem-solving through thoughts.
-This tool helps analyze problems through a flexible thinking process that can adapt and evolve.
-Each thought can build on, question, or revise previous insights as understanding deepens.
+ inputSchema: {
+ type: "object",
+ properties: {
+ todos: {
+ type: "array",
+ items: {
+ type: "object",
+ properties: {
+ content: { type: "string", description: "Task description" },
+ status: { type: "string", enum: ["pending", "in_progress", "done"], description: "Current status" }
+ },
+ required: ["content", "status"]
+ },
+ description: "Array of todo items"
+ }
+ },
+ required: ["todos"]
+ }
+ },
+ {
+ name: "sequential_thinking",
+ description: ` PRIMARY TOOL — MANDATORY: ALWAYS call this BEFORE using any other tool.
 
-USAGE PATTERNS:
-- Start analysis: sequential_thinking { thought: "First, I need to understand the codebase structure", thoughtNumber: 1, totalThoughts: 5, nextThoughtNeeded: true }
-- Deepen analysis: sequential_thinking { thought: "Now examining the main entry point...", thoughtNumber: 2, totalThoughts: 5, nextThoughtNeeded: true }
-- Revise: sequential_thinking { thought: "Actually, my initial assumption was wrong...", thoughtNumber: 3, totalThoughts: 6, nextThoughtNeeded: true, isRevision: true, revisesThought: 1 }
-- Branch: sequential_thinking { thought: "Alternative approach: use different pattern", thoughtNumber: 4, totalThoughts: 6, nextThoughtNeeded: true, branchFromThought: 2, branchId: "alt-1" }
-- Conclude: sequential_thinking { thought: "Solution: implement X with Y pattern", thoughtNumber: 5, totalThoughts: 5, nextThoughtNeeded: false }
+ RULE: Never call read_file, write_file, edit_file, bash, or any action tool without first calling sequential_thinking.
+ RULE: Think first → Plan → Then act. No exceptions.
+
+This tool ensures you are 100% sure about what you're doing before taking action.
+
+HOW TO USE:
+1. Call sequential_thinking with your analysis of the task
+2. Break down what you need to do step by step
+3. Confirm you understand which tool to use and why
+4. Only THEN call the actual tool (read_file, edit_file, bash, etc.)
+
+EXAMPLE:
+Task: "Fix the login bug"
+Step 1: sequential_thinking { thought: "I need to find the login module first. I'll use glob_search to find auth files.", thoughtNumber: 1, totalThoughts: 3, nextThoughtNeeded: true }
+Step 2: glob_search { pattern: "**/*auth*.ts" }
+Step 3: sequential_thinking { thought: "Found auth.ts. I need to read it to understand the login flow.", thoughtNumber: 2, totalThoughts: 3, nextThoughtNeeded: true }
+Step 4: read_file { path: "src/auth.ts" }
+Step 5: sequential_thinking { thought: "Found the bug: null check missing on user object. I'll add it.", thoughtNumber: 3, totalThoughts: 3, nextThoughtNeeded: false }
+Step 6: edit_file { path: "src/auth.ts", oldText: "...", newText: "..." }
 
 PARAMETERS:
 - thought: Your current thinking step (required)
@@ -336,60 +357,32 @@ PARAMETERS:
 - revisesThought: Which thought is being reconsidered (optional)
 - branchFromThought: Branching point thought number (optional)
 - branchId: Branch identifier for alternative paths (optional)
-- needsMoreThoughts: If more thoughts needed than totalThoughts (optional)
-
-BEST PRACTICES:
-- Use before complex actions (editing, implementing)
-- Break problems into clear steps
-- Question assumptions explicitly
-- Revise when new information emerges
-- Branch for alternative approaches
-- Adjust totalThoughts as understanding evolves
-- End with concrete conclusion or plan
-
-WHEN TO USE:
-- Understanding complex codebases
-- Planning implementations
-- Debugging difficult issues
-- Making architectural decisions
-- Before any major code change
-- When stuck and need structured thinking
-
-EXAMPLE FLOW:
-1. thought: "Understanding the problem: X needs Y"
-2. thought: "Current approach has issues: A, B, C"
-3. thought: "Alternative: use pattern Z instead"
-4. thought: "Implementation plan: 1) read, 2) edit, 3) test"
-5. thought: "Ready to implement with this approach", nextThoughtNeeded: false
-
-RELATED TOOLS:
-- Use before: todo_write (create plan), read_file (gather info)
-- Use after: edit_file (implement solution)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        thought: { type: "string", description: "Your current thinking step" },
-        nextThoughtNeeded: { type: "boolean", description: "Whether another thought is needed" },
-        thoughtNumber: { type: "number", minimum: 1, description: "Current thought number (starts at 1)" },
-        totalThoughts: { type: "number", minimum: 1, description: "Estimated total thoughts (adjustable)" },
-        isRevision: { type: "boolean", description: "Whether this revises previous thinking" },
-        revisesThought: { type: "number", minimum: 1, description: "Which thought number is being reconsidered" },
-        branchFromThought: { type: "number", minimum: 1, description: "Thought number to branch from" },
-        branchId: { type: "string", description: "Identifier for this branch (e.g., 'alt-1')" },
-        needsMoreThoughts: { type: "boolean", description: "If more thoughts needed than totalThoughts" }
-      },
-      required: ["thought", "nextThoughtNeeded", "thoughtNumber", "totalThoughts"]
-    },
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false
-    }
-  },
-  {
-    name: "autonomous_agent",
-    description: `Execute development tasks autonomously with build, test, and fix cycles.
+- needsMoreThoughts: If more thoughts needed than totalThoughts (optional)`,
+ inputSchema: {
+ type: "object",
+ properties: {
+ thought: { type: "string", description: "Your current thinking step" },
+ nextThoughtNeeded: { type: "boolean", description: "Whether another thought is needed" },
+ thoughtNumber: { type: "number", minimum: 1, description: "Current thought number (starts at 1)" },
+ totalThoughts: { type: "number", minimum: 1, description: "Estimated total thoughts (adjustable)" },
+ isRevision: { type: "boolean", description: "Whether this revises previous thinking" },
+ revisesThought: { type: "number", minimum: 1, description: "Which thought number is being reconsidered" },
+ branchFromThought: { type: "number", minimum: 1, description: "Thought number to branch from" },
+ branchId: { type: "string", description: "Identifier for this branch (e.g., 'alt-1')" },
+ needsMoreThoughts: { type: "boolean", description: "If more thoughts needed than totalThoughts" }
+ },
+ required: ["thought", "nextThoughtNeeded", "thoughtNumber", "totalThoughts"]
+ },
+ annotations: {
+ readOnlyHint: true,
+ destructiveHint: false,
+ idempotentHint: true,
+ openWorldHint: false
+ }
+ },
+ {
+ name: "autonomous_agent",
+ description: `Execute development tasks autonomously with build, test, and fix cycles.
 Like Claude Code or opencode agents with error memory.
 
 USAGE PATTERNS:
@@ -437,21 +430,21 @@ RELATED TOOLS:
 - Use after: error_memory_status (check learned lessons)
 - Use after: clear_error_memory (reset if needed)
 - Use with: sequential_thinking (plan before agent runs)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        task: { type: "string", description: "Task to execute (e.g., 'Fix failing tests', 'Debug build error')" },
-        workspaceRoot: { type: "string", description: "Working directory (default: current directory)" },
-        buildCommand: { type: "string", description: "Build command (default: 'npm run build')" },
-        testCommand: { type: "string", description: "Test command (default: 'npm test')" },
-        maxIterations: { type: "number", minimum: 1, maximum: 50, description: "Max fix iterations (default: 10)" }
-      },
-      required: ["task"]
-    }
-  },
-  {
-    name: "error_memory_status",
-    description: `Get summary of learned errors and fixes from autonomous agent.
+ inputSchema: {
+ type: "object",
+ properties: {
+ task: { type: "string", description: "Task to execute (e.g., 'Fix failing tests', 'Debug build error')" },
+ workspaceRoot: { type: "string", description: "Working directory (default: current directory)" },
+ buildCommand: { type: "string", description: "Build command (default: 'npm run build')" },
+ testCommand: { type: "string", description: "Test command (default: 'npm test')" },
+ maxIterations: { type: "number", minimum: 1, maximum: 50, description: "Max fix iterations (default: 10)" }
+ },
+ required: ["task"]
+ }
+ },
+ {
+ name: "error_memory_status",
+ description: `Get summary of learned errors and fixes from autonomous agent.
 
 USAGE PATTERNS:
 - Check status: error_memory_status {}
@@ -479,14 +472,14 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use with: autonomous_agent (check before/after runs)
 - Use before: clear_error_memory (if reset needed)`,
-    inputSchema: {
-      type: "object",
-      properties: {}
-    }
-  },
-  {
-    name: "clear_error_memory",
-    description: `Clear all error memory (removes learned lessons from autonomous agent).
+ inputSchema: {
+ type: "object",
+ properties: {}
+ }
+ },
+ {
+ name: "clear_error_memory",
+ description: `Clear all error memory (removes learned lessons from autonomous agent).
 
 USAGE PATTERNS:
 - Reset agent: clear_error_memory {}
@@ -519,14 +512,14 @@ CAUTION:
 RELATED TOOLS:
 - Use before: error_memory_status (review what will be lost)
 - Use after: autonomous_agent (reset for next task)`,
-    inputSchema: {
-      type: "object",
-      properties: {}
-    }
-  },
-  {
-    name: "get_current_time",
-    description: `Get current time in a specific timezone.
+ inputSchema: {
+ type: "object",
+ properties: {}
+ }
+ },
+ {
+ name: "get_current_time",
+ description: `Get current time in a specific timezone.
 
 USAGE PATTERNS:
 - Local time: get_current_time { timezone: "America/New_York" }
@@ -558,17 +551,17 @@ WHEN TO USE:
 
 RELATED TOOLS:
 - Use with: convert_time (convert between timezones)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        timezone: { type: "string", description: "IANA timezone name (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo')" }
-      },
-      required: ["timezone"]
-    }
-  },
-  {
-    name: "convert_time",
-    description: `Convert time between timezones.
+ inputSchema: {
+ type: "object",
+ properties: {
+ timezone: { type: "string", description: "IANA timezone name (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo')" }
+ },
+ required: ["timezone"]
+ }
+ },
+ {
+ name: "convert_time",
+ description: `Convert time between timezones.
 
 USAGE PATTERNS:
 - Meeting conversion: convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }
@@ -594,23 +587,23 @@ COMMON USE CASES:
 
 EXAMPLE:
 - "What time is 2 PM NYC in London?"
-  convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }
+ convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }
 
 RELATED TOOLS:
 - Use with: get_current_time (check current times first)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        sourceTimezone: { type: "string", description: "Source IANA timezone (e.g., 'America/New_York')" },
-        time: { type: "string", description: "Time in HH:MM 24-hour format (e.g., '14:00', '09:30')" },
-        targetTimezone: { type: "string", description: "Target IANA timezone (e.g., 'Europe/London')" }
-      },
-      required: ["sourceTimezone", "time", "targetTimezone"]
-    }
-  },
-  {
-    name: "read_pdf",
-    description: `Extract text, metadata, and images from PDF files.
+ inputSchema: {
+ type: "object",
+ properties: {
+ sourceTimezone: { type: "string", description: "Source IANA timezone (e.g., 'America/New_York')" },
+ time: { type: "string", description: "Time in HH:MM 24-hour format (e.g., '14:00', '09:30')" },
+ targetTimezone: { type: "string", description: "Target IANA timezone (e.g., 'Europe/London')" }
+ },
+ required: ["sourceTimezone", "time", "targetTimezone"]
+ }
+ },
+ {
+ name: "read_pdf",
+ description: `Extract text, metadata, and images from PDF files.
 
 USAGE PATTERNS:
 - Extract all text: read_pdf { path: "/path/to/document.pdf" }
@@ -639,21 +632,21 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use before: glob_search (find PDF files)
 - Use after: write_file (save extracted content)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Path to PDF file" },
-        pages: { type: "string", description: "Pages to extract (e.g., '1-5,10' or '1,3,7-10')" },
-        includeText: { type: "boolean", description: "Extract text content (default: true)" },
-        includeMetadata: { type: "boolean", description: "Extract metadata (default: true)" },
-        includeImages: { type: "boolean", description: "Extract images (default: false)" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "list_skills",
-    description: `List all installed Claude Code skills from ~/.agents/skills/.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Path to PDF file" },
+ pages: { type: "string", description: "Pages to extract (e.g., '1-5,10' or '1,3,7-10')" },
+ includeText: { type: "boolean", description: "Extract text content (default: true)" },
+ includeMetadata: { type: "boolean", description: "Extract metadata (default: true)" },
+ includeImages: { type: "boolean", description: "Extract images (default: false)" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "list_skills",
+ description: `List all installed Claude Code skills from ~/.agents/skills/.
 
 USAGE PATTERNS:
 - List all: list_skills {}
@@ -687,11 +680,11 @@ COMMON SKILLS:
 RELATED TOOLS:
 - Use before: load_skill (load specific skill)
 - Use before: skill_info (get skill details)`,
-    inputSchema: { type: "object", properties: {}, required: [] }
-  },
-  {
-    name: "load_skill",
-    description: `Load a skill's instructions into context from SKILL.md file.
+ inputSchema: { type: "object", properties: {}, required: [] }
+ },
+ {
+ name: "load_skill",
+ description: `Load a skill's instructions into context from SKILL.md file.
 
 USAGE PATTERNS:
 - Load TDD: load_skill { name: "tdd" }
@@ -724,17 +717,17 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use before: list_skills (see available skills)
 - Use before: skill_info (check skill details)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Skill name (e.g., 'tdd', 'git', 'frontend-design')" }
-      },
-      required: ["name"]
-    }
-  },
-  {
-    name: "skill_info",
-    description: `Get metadata for a specific skill (source, hash, added date).
+ inputSchema: {
+ type: "object",
+ properties: {
+ name: { type: "string", description: "Skill name (e.g., 'tdd', 'git', 'frontend-design')" }
+ },
+ required: ["name"]
+ }
+ },
+ {
+ name: "skill_info",
+ description: `Get metadata for a specific skill (source, hash, added date).
 
 USAGE PATTERNS:
 - Check skill: skill_info { name: "tdd" }
@@ -759,18 +752,18 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use before: list_skills (see all skills)
 - Use before: load_skill (load after verification)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Skill name (e.g., 'tdd', 'git', 'security-review')" }
-      },
-      required: ["name"]
-    }
-  },
-  // Enhanced Filesystem Tools (from @modelcontextprotocol/server-filesystem)
-  {
-    name: "read_text_file",
-    description: `Read complete file contents as text with optional line limits.
+ inputSchema: {
+ type: "object",
+ properties: {
+ name: { type: "string", description: "Skill name (e.g., 'tdd', 'git', 'security-review')" }
+ },
+ required: ["name"]
+ }
+ },
+ // Enhanced Filesystem Tools (from @modelcontextprotocol/server-filesystem)
+ {
+ name: "read_text_file",
+ description: `Read complete file contents as text with optional line limits.
 
 USAGE PATTERNS:
 - Read all: read_text_file { path: "src/index.ts" }
@@ -799,19 +792,19 @@ RELATED TOOLS:
 - Use before: glob_search (find file path)
 - Use with: read_multiple_files (batch read)
 - Alternative: read_file (no line limits)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "File path to read" },
-        head: { type: "number", description: "Read only first N lines (e.g., 50)" },
-        tail: { type: "number", description: "Read only last N lines (e.g., 20)" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "read_multiple_files",
-    description: `Read multiple files simultaneously in a single call.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "File path to read" },
+ head: { type: "number", description: "Read only first N lines (e.g., 50)" },
+ tail: { type: "number", description: "Read only last N lines (e.g., 20)" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "read_multiple_files",
+ description: `Read multiple files simultaneously in a single call.
 
 USAGE PATTERNS:
 - Read related files: read_multiple_files { paths: ["src/index.ts", "src/utils.ts", "src/types.ts"] }
@@ -832,7 +825,7 @@ OUTPUT FORMAT:
 <file content>
 
 === /path/to/file3.ts ===
-❌ Error: File not found
+ Error: File not found
 
 WHEN TO USE:
 - Understanding related modules
@@ -844,17 +837,17 @@ RELATED TOOLS:
 - Use before: glob_search (find files to read)
 - Alternative: read_file (single file)
 - Alternative: read_text_file (with line limits)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        paths: { type: "array", items: { type: "string" }, description: "Array of file paths to read" }
-      },
-      required: ["paths"]
-    }
-  },
-  {
-    name: "list_directory",
-    description: `List directory contents with [FILE] or [DIR] prefixes.
+ inputSchema: {
+ type: "object",
+ properties: {
+ paths: { type: "array", items: { type: "string" }, description: "Array of file paths to read" }
+ },
+ required: ["paths"]
+ }
+ },
+ {
+ name: "list_directory",
+ description: `List directory contents with [FILE] or [DIR] prefixes.
 
 USAGE PATTERNS:
 - Current dir: list_directory { path: "." }
@@ -863,8 +856,8 @@ USAGE PATTERNS:
 - Home dir: list_directory { path: "~" }
 
 OUTPUT FORMAT:
-[DIR]  src
-[DIR]  tests
+[DIR] src
+[DIR] tests
 [FILE] package.json
 [FILE] README.md
 [FILE] tsconfig.json
@@ -885,17 +878,17 @@ RELATED TOOLS:
 - Use before: glob_search (narrow search)
 - Use before: read_file (get file path)
 - Use with: list_directory_with_sizes (see sizes)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Directory path to list (use '.' for current directory)" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "create_directory",
-    description: `Create new directory or ensure it exists (creates parents if needed).
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Directory path to list (use '.' for current directory)" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "create_directory",
+ description: `Create new directory or ensure it exists (creates parents if needed).
 
 USAGE PATTERNS:
 - Create single: create_directory { path: "new-folder" }
@@ -917,17 +910,17 @@ WHEN TO USE:
 RELATED TOOLS:
 - Use before: write_file (create destination)
 - Use after: list_directory (verify creation)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Directory path to create (parents created automatically)" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "move_file",
-    description: `Move or rename files and directories.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Directory path to create (parents created automatically)" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "move_file",
+ description: `Move or rename files and directories.
 
 USAGE PATTERNS:
 - Rename file: move_file { source: "old-name.txt", destination: "new-name.txt" }
@@ -955,18 +948,18 @@ RELATED TOOLS:
 - Use before: create_directory (ensure parent exists)
 - Use after: list_directory (verify move)
 - Use before: delete_file (alternative for removal)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        source: { type: "string", description: "Source file or directory path" },
-        destination: { type: "string", description: "Destination path (must have existing parent directory)" }
-      },
-      required: ["source", "destination"]
-    }
-  },
-  {
-    name: "delete_file",
-    description: `Delete a file permanently.
+ inputSchema: {
+ type: "object",
+ properties: {
+ source: { type: "string", description: "Source file or directory path" },
+ destination: { type: "string", description: "Destination path (must have existing parent directory)" }
+ },
+ required: ["source", "destination"]
+ }
+ },
+ {
+ name: "delete_file",
+ description: `Delete a file permanently.
 
 USAGE PATTERNS:
 - Delete file: delete_file { path: "temp.txt" }
@@ -1000,17 +993,17 @@ RELATED TOOLS:
 - Use before: get_file_info (verify target)
 - Use before: list_directory (confirm exists)
 - Alternative: move_file (safer, can recover)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "File path to delete" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "delete_directory",
-    description: `Delete a directory and its contents.
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "File path to delete" }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "delete_directory",
+ description: `Delete a directory and its contents.
 
 USAGE PATTERNS:
 - Delete dir: delete_directory { path: "temp-folder" }
@@ -1049,353 +1042,515 @@ RELATED TOOLS:
 - Use before: list_directory (see contents first)
 - Use before: directory_tree (full structure)
 - Use before: get_file_info (verify target)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Directory path to delete" },
-        recursive: { type: "boolean", description: "Delete recursively (default: true)" }
-      },
-      required: ["path"]
-    }
-  },
+ inputSchema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Directory path to delete" },
+ recursive: { type: "boolean", description: "Delete recursively (default: true)" }
+ },
+ required: ["path"]
+ }
+ },
+ // Category System - AI loads tools by category
+ {
+ name: "list_categories",
+ description: ` PRIMARY: List all available tool categories. Call this FIRST to discover what tools are available.
+
+ ALWAYS call sequential_thinking BEFORE using any other tool.
+ ALWAYS call list_categories at session start to see available categories.
+
+Returns a list of categories with their purpose and tool count.
+After calling this, use load_category to get detailed tool instructions for the category you need.
+
+CATEGORIES:
+- file: Read, write, edit, list, create, delete, move files
+- search: Find files by pattern (glob) or content (grep)
+- time: Get current time, convert between timezones
+- system: Execute shell commands (bash)
+- pdf: Extract text and metadata from PDF files
+- agent: Autonomous agent, error memory, todo tracking
+- skills: List, load, and get info about installed skills
+- core: Core file operations (bash_execute, file_read, file_write, file_edit)
+
+USAGE:
+list_categories {}`,
+ inputSchema: { type: "object", properties: {} }
+ },
+ {
+ name: "load_category",
+ description: ` Load detailed tool instructions for a specific category.
+
+ ALWAYS call sequential_thinking BEFORE using any other tool.
+ Call list_categories first to see available categories.
+ Then call load_category with the category name to get tool details.
+
+CATEGORIES:
+- file: read_file, write_file, edit_file, list_directory, create_directory, delete_file, move_file, delete_directory, read_text_file, read_multiple_files
+- search: glob_search, grep_search
+- time: get_current_time, convert_time
+- system: bash
+- pdf: read_pdf
+- agent: autonomous_agent, error_memory_status, clear_error_memory, todo_write, sequential_thinking
+- skills: list_skills, load_skill, skill_info
+- core: bash_execute, file_read, file_write, file_edit
+
+USAGE:
+load_category { category: "file" }
+load_category { category: "search" }`,
+ inputSchema: {
+ type: "object",
+ properties: {
+ category: { type: "string", enum: ["file", "search", "time", "system", "pdf", "agent", "skills", "core"], description: "Category name to load" }
+ },
+ required: ["category"]
+ }
+ },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  const a = args as Record<string, any>;
-  try {
-    switch (name) {
-      case "bash": {
-        const { stdout, stderr } = await execa(a.command, { 
-          shell: true, 
-          cwd: a.cwd || process.cwd(), 
-          timeout: a.timeout || 30000 
-        });
-        return { content: [{ type: "text", text: stdout || stderr || "✅ Done" }] };
-      }
-      
-      case "read_file": {
-        const content = await fs.readFile(a.path, a.encoding || "utf-8");
-        return { content: [{ type: "text", text: content }] };
-      }
-      
-      case "write_file": {
-        await fs.mkdir(path.dirname(a.path), { recursive: true });
-        await fs.writeFile(a.path, a.content, "utf-8");
-        return { content: [{ type: "text", text: `✅ Written to ${a.path}` }] };
-      }
-      
-      case "edit_file": {
-        let content = await fs.readFile(a.path, "utf-8");
-        if (!content.includes(a.oldText)) {
-          throw new Error(`oldText not found in file. First 500 chars: ${content.slice(0, 500)}`);
-        }
-        content = a.replaceAll 
-          ? content.split(a.oldText).join(a.newText)
-          : content.replace(a.oldText, a.newText);
-        await fs.writeFile(a.path, content, "utf-8");
-        return { content: [{ type: "text", text: `✅ Edited ${a.path}` }] };
-      }
-      
-      case "glob_search": {
-        const files = await fg(a.pattern, { 
-          cwd: a.cwd || process.cwd(), 
-          absolute: a.absolute ?? false 
-        });
-        return { content: [{ type: "text", text: files.length ? files.join("\n") : "No matches" }] };
-      }
-      
-      case "grep_search": {
-        const grepArgs = ["-r", a.pattern, a.path || "."];
-        if (!a.caseSensitive) grepArgs.unshift("-i");
-        if (a.filePattern) grepArgs.push("--glob", a.filePattern);
-        try {
-          const { stdout } = await execa("rg", grepArgs, { timeout: 10000 });
-          return { content: [{ type: "text", text: stdout || "No matches" }] };
-        } catch (e: any) {
-          if (e.code === "ENOENT") {
-            const { stdout } = await execa("grep", ["-r", a.pattern, a.path || "."], { timeout: 10000 });
-            return { content: [{ type: "text", text: stdout || "No matches" }] };
-          }
-          throw e;
-        }
-      }
-      
-      case "todo_write": {
-        const list = a.todos.map((t: any, i: number) => 
-          `${i + 1}. [${t.status || "pending"}] ${t.content}`
-        ).join("\n");
-        return { content: [{ type: "text", text: `📋 Todos:\n${list}` }] };
-      }
-      
-      case "sequential_thinking": {
-        const { SequentialThinkingServer, coerceBoolean } = await import('./tools/SequentialThinkingTool.js');
-        const thinkingServer = new SequentialThinkingServer();
-        const result = thinkingServer.processThought({
-          thought: a.thought,
-          thoughtNumber: a.thoughtNumber,
-          totalThoughts: a.totalThoughts,
-          nextThoughtNeeded: coerceBoolean(a.nextThoughtNeeded),
-          isRevision: a.isRevision !== undefined ? coerceBoolean(a.isRevision) : undefined,
-          revisesThought: a.revisesThought,
-          branchFromThought: a.branchFromThought,
-          branchId: a.branchId,
-          needsMoreThoughts: a.needsMoreThoughts !== undefined ? coerceBoolean(a.needsMoreThoughts) : undefined
-        });
-        
-        if (result.isError) return result;
-        
-        const parsedContent = JSON.parse(result.content[0].text);
-        return { content: result.content, structuredContent: parsedContent };
-      }
-      
-      case "autonomous_agent": {
-        const { executeAutonomousTask } = await import('./agent/AutonomousAgent.js');
-        return executeAutonomousTask({
-          task: a.task,
-          workspaceRoot: a.workspaceRoot,
-          buildCommand: a.buildCommand,
-          testCommand: a.testCommand,
-          maxIterations: a.maxIterations
-        });
-      }
-      
-      case "error_memory_status": {
-        const { getErrorMemoryStatus } = await import('./agent/AutonomousAgent.js');
-        return { content: [{ type: "text", text: getErrorMemoryStatus() }] };
-      }
-      
-      case "clear_error_memory": {
-        const { clearErrorMemory } = await import('./agent/AutonomousAgent.js');
-        clearErrorMemory();
-        return { content: [{ type: "text", text: "✅ Error memory cleared" }] };
-      }
-      
-      case "get_current_time": {
-        const now = new Date();
-        const timeString = now.toLocaleString("en-US", { timeZone: a.timezone });
-        const offset = new Date().toLocaleString("en-US", { 
-          timeZone: a.timezone, 
-          timeZoneName: "short" 
-        }).split(" ").pop();
-        return { 
-          content: [{ 
-            type: "text", 
-            text: `🕐 Current time in ${a.timezone}: ${timeString} (${offset})` 
-          }] 
-        };
-      }
-      
-      case "convert_time": {
-        const [hours, minutes] = a.time.split(":").map(Number);
-        const now = new Date();
-        now.setHours(hours, minutes);
-        
-        const sourceTime = new Date(now.toLocaleString("en-US", { timeZone: a.sourceTimezone }));
-        const targetTime = new Date(sourceTime.toLocaleString("en-US", { timeZone: a.targetTimezone }));
-        
-        return { 
-          content: [{ 
-            type: "text", 
-            text: `🕐 ${a.time} in ${a.sourceTimezone} = ${targetTime.toLocaleTimeString("en-US", { 
-              timeZone: a.targetTimezone,
-              hour: "2-digit",
-              minute: "2-digit"
-            })} in ${a.targetTimezone}` 
-          }] 
-        };
-      }
-      
-      case "read_pdf": {
-        const pdfParse = await import("pdf-parse");
-        const pdfBuffer = await fs.readFile(a.path);
-        const data = await pdfParse.default(pdfBuffer);
-        
-        let result = "";
-        if (a.includeText !== false) {
-          result += `📄 Text Content:\n${data.text}\n\n`;
-        }
-        if (a.includeMetadata !== false) {
-          result += `📋 Metadata:\n`;
-          result += `  Pages: ${data.numpages}\n`;
-          result += `  Version: ${data.version}\n`;
-          if (data.info?.Title) result += `  Title: ${data.info.Title}\n`;
-          if (data.info?.Author) result += `  Author: ${data.info.Author}\n`;
-          if (data.info?.CreationDate) result += `  Created: ${data.info.CreationDate}\n`;
-        }
-        return { content: [{ type: "text", text: result.trim() }] };
-      }
-      
-      case "list_skills": {
-        const lockPath = path.join(process.env.HOME || "~", ".agents/.skill-lock.json");
-        try {
-          const lockContent = await fs.readFile(lockPath, "utf-8");
-          const lock = JSON.parse(lockContent);
-          const skills = Object.keys(lock.skills || {}).map(name => ({
-            name,
-            source: lock.skills[name].source,
-            hash: lock.skills[name].hash?.slice(0, 8)
-          }));
-          return { 
-            content: [{ 
-              type: "text", 
-              text: `🧩 Skills (${skills.length}):\n${skills.map(s => `- ${s.name} (${s.source}) [${s.hash}]`).join("\n")}` 
-            }] 
-          };
-        } catch (e: any) {
-          return { 
-            content: [{ 
-              type: "text", 
-              text: `❌ Could not read ~/.agents/.skill-lock.json: ${e.message}` 
-            }], 
-            isError: true 
-          };
-        }
-      }
-      
-      case "load_skill": {
-        const skillPath = path.join(process.env.HOME || "~", `.agents/skills/${a.name}/SKILL.md`);
-        try {
-          const content = await fs.readFile(skillPath, "utf-8");
-          return { 
-            content: [{ 
-              type: "text", 
-              text: `✅ Loaded skill '${a.name}':\n\n${content}` 
-            }] 
-          };
-        } catch (e: any) {
-          return { 
-            content: [{ 
-              type: "text", 
-              text: `❌ Could not load skill '${a.name}': ${e.message}` 
-            }], 
-            isError: true 
-          };
-        }
-      }
-      
-      case "skill_info": {
-        const lockPath = path.join(process.env.HOME || "~", ".agents/.skill-lock.json");
-        try {
-          const lockContent = await fs.readFile(lockPath, "utf-8");
-          const lock = JSON.parse(lockContent);
-          const skill = lock.skills?.[a.name];
-          if (!skill) throw new Error(`Skill '${a.name}' not found`);
-          return { 
-            content: [{ 
-              type: "text", 
-              text: `📋 ${a.name}:\nSource: ${skill.source}\nHash: ${skill.hash}\nAdded: ${skill.added}` 
-            }] 
-          };
-        } catch (e: any) {
-          return { 
-            content: [{ type: "text", text: `❌ ${e.message}` }], 
-            isError: true 
-          };
-        }
-      }
-      
-      // Enhanced Filesystem Tools
-      case "read_text_file": {
-        let content = await fs.readFile(a.path, "utf-8");
-        if (a.head && !a.tail) {
-          content = content.split('\n').slice(0, a.head).join('\n');
-        } else if (a.tail && !a.head) {
-          content = content.split('\n').slice(-a.tail).join('\n');
-        }
-        return { content: [{ type: "text", text: content }] };
-      }
-      
-      case "read_multiple_files": {
-        const results = [];
-        for (const p of a.paths) {
-          try {
-            const content = await fs.readFile(p, "utf-8");
-            results.push(`=== ${p} ===\n${content}`);
-          } catch (e: any) {
-            results.push(`=== ${p} ===\n❌ Error: ${e.message}`);
-          }
-        }
-        return { content: [{ type: "text", text: results.join('\n\n') }] };
-      }
-      
-      case "list_directory": {
-        const entries = await fs.readdir(a.path, { withFileTypes: true });
-        const output = entries.map(e => e.isDirectory() ? `[DIR]  ${e.name}` : `[FILE] ${e.name}`).sort().join('\n');
-        return { content: [{ type: "text", text: output || "Empty directory" }] };
-      }
-      
-      case "create_directory": {
-        await fs.mkdir(a.path, { recursive: true });
-        return { content: [{ type: "text", text: `✅ Created: ${a.path}` }] };
-      }
-      
-      case "move_file": {
-        await fs.rename(a.source, a.destination);
-        return { content: [{ type: "text", text: `✅ Moved: ${a.source} → ${a.destination}` }] };
-      }
-      
-      case "delete_file": {
-        await fs.unlink(a.path);
-        return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
-      }
-      
+ const { name, arguments: args } = request.params;
+ const a = args as Record<string, any>;
+ try {
+ switch (name) {
+ case "bash": {
+ const { stdout, stderr } = await execa(a.command, { 
+ shell: true, 
+ cwd: a.cwd || process.cwd(), 
+ timeout: a.timeout || 30000 
+ });
+ return safeResponse(stdout || stderr || " Done");
+ }
+ 
+ case "read_file": {
+ const content = await fs.readFile(a.path, a.encoding || "utf-8");
+ return safeResponse(content);
+ }
+ 
+ case "write_file": {
+ await fs.mkdir(path.dirname(a.path), { recursive: true });
+ await fs.writeFile(a.path, a.content, "utf-8");
+ return safeResponse(` Written to ${a.path}`);
+ }
+ 
+ case "edit_file": {
+ let content = await fs.readFile(a.path, "utf-8");
+ if (!content.includes(a.oldText)) {
+ throw new Error(`oldText not found in file. First 500 chars: ${content.slice(0, 500)}`);
+ }
+ content = a.replaceAll 
+ ? content.split(a.oldText).join(a.newText)
+ : content.replace(a.oldText, a.newText);
+ await fs.writeFile(a.path, content, "utf-8");
+ return safeResponse(` Edited ${a.path}`);
+ }
+ 
+ case "glob_search": {
+ const files = await fg(a.pattern, { 
+ cwd: a.cwd || process.cwd(), 
+ absolute: a.absolute ?? false 
+ });
+ return safeResponse(files.length ? files.join("\n") : "No matches");
+ }
+ 
+ case "grep_search": {
+ const grepArgs = ["-r", a.pattern, a.path || "."];
+ if (!a.caseSensitive) grepArgs.unshift("-i");
+ if (a.filePattern) grepArgs.push("--glob", a.filePattern);
+ try {
+ const { stdout } = await execa("rg", grepArgs, { timeout: 10000 });
+ return safeResponse(stdout || "No matches");
+ } catch (e: any) {
+ if (e.code === "ENOENT") {
+ const { stdout } = await execa("grep", ["-r", a.pattern, a.path || "."], { timeout: 10000 });
+ return safeResponse(stdout || "No matches");
+ }
+ throw e;
+ }
+ }
+ 
+ case "todo_write": {
+ const list = a.todos.map((t: any, i: number) => 
+ `${i + 1}. [${t.status || "pending"}] ${t.content}`
+ ).join("\n");
+ return safeResponse(` Todos:\n${list}`);
+ }
+ 
+ case "sequential_thinking": {
+ const { SequentialThinkingServer, coerceBoolean } = await import('./tools/SequentialThinkingTool.js');
+ const thinkingServer = new SequentialThinkingServer();
+ const result = thinkingServer.processThought({
+ thought: a.thought,
+ thoughtNumber: a.thoughtNumber,
+ totalThoughts: a.totalThoughts,
+ nextThoughtNeeded: coerceBoolean(a.nextThoughtNeeded),
+ isRevision: a.isRevision !== undefined ? coerceBoolean(a.isRevision) : undefined,
+ revisesThought: a.revisesThought,
+ branchFromThought: a.branchFromThought,
+ branchId: a.branchId,
+ needsMoreThoughts: a.needsMoreThoughts !== undefined ? coerceBoolean(a.needsMoreThoughts) : undefined
+ });
+ 
+ if (result.isError) return result;
+ 
+ const parsedContent = JSON.parse(result.content[0].text);
+ return { content: result.content, structuredContent: parsedContent };
+ }
+ 
+ case "autonomous_agent": {
+ const { executeAutonomousTask } = await import('./agent/AutonomousAgent.js');
+ return executeAutonomousTask({
+ task: a.task,
+ workspaceRoot: a.workspaceRoot,
+ buildCommand: a.buildCommand,
+ testCommand: a.testCommand,
+ maxIterations: a.maxIterations
+ });
+ }
+ 
+ case "error_memory_status": {
+ const { getErrorMemoryStatus } = await import('./agent/AutonomousAgent.js');
+ return safeResponse(getErrorMemoryStatus());
+ }
+ 
+ case "clear_error_memory": {
+ const { clearErrorMemory } = await import('./agent/AutonomousAgent.js');
+ clearErrorMemory();
+ return safeResponse(" Error memory cleared");
+ }
+ 
+ case "get_current_time": {
+ const now = new Date();
+ const timeString = now.toLocaleString("en-US", { timeZone: a.timezone });
+ const offset = new Date().toLocaleString("en-US", { 
+ timeZone: a.timezone, 
+ timeZoneName: "short" 
+ }).split(" ").pop();
+ return safeResponse(` Current time in ${a.timezone}: ${timeString} (${offset})`);
+ }
+ 
+ case "convert_time": {
+ const [hours, minutes] = a.time.split(":").map(Number);
+ const now = new Date();
+ now.setHours(hours, minutes);
+ 
+ const sourceTime = new Date(now.toLocaleString("en-US", { timeZone: a.sourceTimezone }));
+ const targetTime = new Date(sourceTime.toLocaleString("en-US", { timeZone: a.targetTimezone }));
+ 
+ return safeResponse(` ${a.time} in ${a.sourceTimezone} = ${targetTime.toLocaleTimeString("en-US", { 
+ timeZone: a.targetTimezone,
+ hour: "2-digit",
+ minute: "2-digit"
+ })} in ${a.targetTimezone}`);
+ }
+ 
+ case "read_pdf": {
+ const pdfParse = await import("pdf-parse");
+ const pdfBuffer = await fs.readFile(a.path);
+ const data = await pdfParse.default(pdfBuffer);
+ 
+ let result = "";
+ if (a.includeText !== false) {
+ result += ` Text Content:\n${data.text}\n\n`;
+ }
+ if (a.includeMetadata !== false) {
+ result += ` Metadata:\n`;
+ result += ` Pages: ${data.numpages}\n`;
+ result += ` Version: ${data.version}\n`;
+ if (data.info?.Title) result += ` Title: ${data.info.Title}\n`;
+ if (data.info?.Author) result += ` Author: ${data.info.Author}\n`;
+ if (data.info?.CreationDate) result += ` Created: ${data.info.CreationDate}\n`;
+ }
+ return safeResponse(result.trim());
+ }
+ 
+ case "list_skills": {
+ const lockPath = path.join(process.env.HOME || "~", ".agents/.skill-lock.json");
+ try {
+ const lockContent = await fs.readFile(lockPath, "utf-8");
+ const lock = JSON.parse(lockContent);
+ const skills = Object.keys(lock.skills || {}).map(name => ({
+ name,
+ source: lock.skills[name].source,
+ hash: lock.skills[name].hash?.slice(0, 8)
+ }));
+ return safeResponse(` Skills (${skills.length}):\n${skills.map(s => `- ${s.name} (${s.source}) [${s.hash}]`).join("\n")}`);
+  } catch (e: any) {
+  return safeErrorResponse(` Could not read ~/.agents/.skill-lock.json: ${e.message}`);
+  }
+  }
+ 
+ case "load_skill": {
+ const skillPath = path.join(process.env.HOME || "~", `.agents/skills/${a.name}/SKILL.md`);
+ try {
+ const content = await fs.readFile(skillPath, "utf-8");
+ return safeErrorResponse(` Loaded skill '${a.name}':\n\n${content}`);
+ } catch (e: any) {
+ return safeResponse(` Could not load skill '${a.name}': ${e.message}`);
+ }
+ }
+ 
+ case "skill_info": {
+ const lockPath = path.join(process.env.HOME || "~", ".agents/.skill-lock.json");
+ try {
+ const lockContent = await fs.readFile(lockPath, "utf-8");
+ const lock = JSON.parse(lockContent);
+ const skill = lock.skills?.[a.name];
+ if (!skill) throw new Error(`Skill '${a.name}' not found`);
+ return safeErrorResponse(` ${a.name}:\nSource: ${skill.source}\nHash: ${skill.hash}\nAdded: ${skill.added}`);
+   } catch (e: any) {
+   return safeErrorResponse(` ${e.message}`);
+   }
+  }
+  
+  // Enhanced Filesystem Tools
+  case "read_text_file": {
+ let content = await fs.readFile(a.path, "utf-8");
+ if (a.head && !a.tail) {
+ content = content.split('\n').slice(0, a.head).join('\n');
+ } else if (a.tail && !a.head) {
+ content = content.split('\n').slice(-a.tail).join('\n');
+ }
+ return safeResponse(content);
+ }
+ 
+ case "read_multiple_files": {
+ const results = [];
+ for (const p of a.paths) {
+ try {
+ const content = await fs.readFile(p, "utf-8");
+ results.push(`=== ${p} ===\n${content}`);
+ } catch (e: any) {
+ results.push(`=== ${p} ===\n Error: ${e.message}`);
+ }
+ }
+ return safeResponse(results.join('\n\n'));
+ }
+ 
+ case "list_directory": {
+ const entries = await fs.readdir(a.path, { withFileTypes: true });
+ const output = entries.map(e => e.isDirectory() ? `[DIR] ${e.name}` : `[FILE] ${e.name}`).sort().join('\n');
+ return safeResponse(output || "Empty directory");
+ }
+ 
+ case "create_directory": {
+ await fs.mkdir(a.path, { recursive: true });
+ return safeResponse(` Created: ${a.path}`);
+ }
+ 
+ case "move_file": {
+ await fs.rename(a.source, a.destination);
+ return safeResponse(` Moved: ${a.source} → ${a.destination}`);
+ }
+ 
+ case "delete_file": {
+ await fs.unlink(a.path);
+ return safeResponse(` Deleted: ${a.path}`);
+ }
+ 
       case "delete_directory": {
         await fs.rm(a.path, { recursive: a.recursive !== false, force: true });
-        return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
+        return safeResponse(`Deleted: ${a.path}`);
       }
-      
-      default:
-        return { 
-          content: [{ type: "text", text: `❌ Unknown tool: ${name}` }], 
-          isError: true 
+
+      case "list_categories": {
+        const categories = [
+          { name: "file", tools: 10, desc: "Read, write, edit, list, create, delete, move files" },
+          { name: "search", tools: 2, desc: "Find files by pattern (glob) or content (grep)" },
+          { name: "time", tools: 2, desc: "Get current time, convert between timezones" },
+          { name: "system", tools: 1, desc: "Execute shell commands (bash)" },
+          { name: "pdf", tools: 1, desc: "Extract text and metadata from PDF files" },
+          { name: "agent", tools: 5, desc: "Autonomous agent, error memory, todo tracking, sequential thinking" },
+          { name: "skills", tools: 3, desc: "List, load, and get info about installed skills" },
+          { name: "core", tools: 4, desc: "Core file operations (bash_execute, file_read, file_write, file_edit)" }
+        ];
+        const list = categories.map(c => `- ${c.name}: ${c.desc} (${c.tools} tools)`).join("\n");
+        return safeResponse(`Available Categories:\n${list}\n\nUse load_category { category: "name" } to get detailed tool instructions.`);
+      }
+
+      case "load_category": {
+        const catDocs: Record<string, string> = {
+          file: `FILE CATEGORY TOOLS:
+
+read_file - Read complete file contents with UTF-8 encoding
+  Params: path (required), encoding (optional)
+  Example: read_file { path: "src/index.ts" }
+
+write_file - Create new file or overwrite existing file completely
+  Params: path (required), content (required)
+  Example: write_file { path: "src/new.ts", content: "export const x = 1;" }
+
+edit_file - Search and replace text in a file
+  Params: path (required), oldText (required), newText (required), replaceAll (optional)
+  Example: edit_file { path: "src.ts", oldText: "const x = 1", newText: "const x = 2" }
+
+list_directory - List directory contents with [FILE] or [DIR] prefixes
+  Params: path (required)
+  Example: list_directory { path: "src/" }
+
+create_directory - Create new directory (creates parents if needed)
+  Params: path (required)
+  Example: create_directory { path: "src/components/buttons" }
+
+delete_file - Delete a file permanently
+  Params: path (required)
+  Example: delete_file { path: "temp.txt" }
+
+delete_directory - Delete a directory and its contents
+  Params: path (required), recursive (optional, default: true)
+  Example: delete_directory { path: "temp-folder" }
+
+move_file - Move or rename files and directories
+  Params: source (required), destination (required)
+  Example: move_file { source: "old-name.txt", destination: "new-name.txt" }
+
+read_text_file - Read file contents with optional line limits
+  Params: path (required), head (optional), tail (optional)
+  Example: read_text_file { path: "large.log", tail: 20 }
+
+read_multiple_files - Read multiple files in a single call
+  Params: paths (required, array)
+  Example: read_multiple_files { paths: ["src/index.ts", "src/utils.ts"] }`,
+
+          search: `SEARCH CATEGORY TOOLS:
+
+glob_search - Find files by glob pattern
+  Params: pattern (required), cwd (optional), absolute (optional)
+  Example: glob_search { pattern: "**/*.ts", cwd: "src/" }
+
+grep_search - Search file contents using ripgrep or grep with regex
+  Params: pattern (required), path (optional), caseSensitive (optional), filePattern (optional)
+  Example: grep_search { pattern: "function getUser", filePattern: "*.ts" }`,
+
+          time: `TIME CATEGORY TOOLS:
+
+get_current_time - Get current time in a specific timezone
+  Params: timezone (required, IANA name like "America/New_York")
+  Example: get_current_time { timezone: "UTC" }
+
+convert_time - Convert time between timezones
+  Params: sourceTimezone (required), time (required, HH:MM 24-hour), targetTimezone (required)
+  Example: convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }`,
+
+          system: `SYSTEM CATEGORY TOOLS:
+
+bash - Execute shell commands with timeout and working directory support
+  Params: command (required), cwd (optional), timeout (optional)
+  Example: bash { command: "npm run build", cwd: "/path/to/project" }
+  Note: Use for git operations, package management, running tests, etc.`,
+
+          pdf: `PDF CATEGORY TOOLS:
+
+read_pdf - Extract text, metadata, and images from PDF files
+  Params: path (required), pages (optional), includeText (optional), includeMetadata (optional), includeImages (optional)
+  Example: read_pdf { path: "document.pdf" }`,
+
+          agent: `AGENT CATEGORY TOOLS:
+
+sequential_thinking - MANDATORY: Always call this BEFORE any action tool
+  Params: thought (required), thoughtNumber (required), totalThoughts (required), nextThoughtNeeded (required)
+  Example: sequential_thinking { thought: "I need to find the auth module first", thoughtNumber: 1, totalThoughts: 3, nextThoughtNeeded: true }
+
+todo_write - Manage a structured todo list
+  Params: todos (required, array of {content, status})
+  Example: todo_write { todos: [{ content: "Read codebase", status: "pending" }] }
+
+autonomous_agent - Execute development tasks with build/test/fix cycles
+  Params: task (required), workspaceRoot (optional), buildCommand (optional), testCommand (optional), maxIterations (optional)
+  Example: autonomous_agent { task: "Fix failing unit tests" }
+
+error_memory_status - Get summary of learned errors from autonomous agent
+  Params: none
+  Example: error_memory_status {}
+
+clear_error_memory - Clear all error memory
+  Params: none
+  Example: clear_error_memory {}`,
+
+          skills: `SKILLS CATEGORY TOOLS:
+
+list_skills - List all installed skills
+  Params: none
+  Example: list_skills {}
+
+load_skill - Load a skill's instructions
+  Params: name (required)
+  Example: load_skill { name: "tdd" }
+
+skill_info - Get metadata for a specific skill
+  Params: name (required)
+  Example: skill_info { name: "tdd" }`,
+
+          core: `CORE CATEGORY TOOLS:
+
+bash_execute - Execute a shell command safely
+  Params: command (required), cwd (optional)
+  Example: bash_execute { command: "npm install" }
+
+file_read - Read file contents
+  Params: path (required)
+  Example: file_read { path: "src/index.ts" }
+
+file_write - Create or overwrite a file
+  Params: path (required), content (required)
+  Example: file_write { path: "new.ts", content: "export const x = 1;" }
+
+file_edit - Perform search-and-replace on a file
+  Params: path (required), oldText (required), newText (required)
+  Example: file_edit { path: "file.ts", oldText: "const x = 1", newText: "const x = 2" }`
         };
-    }
-  } catch (e: any) {
-    return { 
-      content: [{ type: "text", text: `❌ ${e.message}` }], 
-      isError: true 
-    };
-  }
+
+        const doc = catDocs[a.category];
+        if (!doc) {
+          return safeErrorResponse(`Unknown category: ${a.category}. Use list_categories to see available categories.`);
+        }
+        return safeResponse(doc);
+      }
+
+      default:
+ return safeErrorResponse(` Unknown tool: ${name}`);
+ }
+ } catch (e: any) {
+ return safeErrorResponse(` ${e.message}`);
+ }
 });
 
 // Prompt templates for autonomous agent behavior
 const PROMPTS = [
-  {
-    name: "autonomous-agent",
-    description: "System prompt for autonomous AI agent behavior with tool usage patterns",
-    arguments: []
-  },
-  {
-    name: "skill-loader",
-    description: "Load and apply skills from ~/.agents/skills/ or ./skills/",
-    arguments: [
-      { name: "skillName", description: "Name of the skill to load", required: false }
-    ]
-  },
-  {
-    name: "task-planner",
-    description: "Break down complex tasks into sequential steps with todo tracking",
-    arguments: [
-      { name: "task", description: "The task to plan", required: true }
-    ]
-  }
+ {
+ name: "autonomous-agent",
+ description: "System prompt for autonomous AI agent behavior with tool usage patterns",
+ arguments: []
+ },
+ {
+ name: "skill-loader",
+ description: "Load and apply skills from ~/.agents/skills/ or ./skills/",
+ arguments: [
+ { name: "skillName", description: "Name of the skill to load", required: false }
+ ]
+ },
+ {
+ name: "task-planner",
+ description: "Break down complex tasks into sequential steps with todo tracking",
+ arguments: [
+ { name: "task", description: "The task to plan", required: true }
+ ]
+ }
 ];
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: PROMPTS }));
 
 server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  const a = args as Record<string, any> | undefined;
-  
-  try {
-    switch (name) {
-      case "autonomous-agent": {
-        const autonomousPrompt = `You are an autonomous AI agent with access to 39 tools.
+ const { name, arguments: args } = request.params;
+ const a = args as Record<string, any> | undefined;
+ 
+ try {
+ switch (name) {
+ case "autonomous-agent": {
+ const autonomousPrompt = `You are an autonomous AI agent with access to 39 tools.
 
-⚠️ CRITICAL RULE - ALWAYS USE TOOLS:
+ CRITICAL RULE - ALWAYS USE TOOLS:
 - NEVER just explain what you would do - ACTUALLY DO IT WITH TOOLS
 - NEVER say "I can help with that" without calling a tool
 - NEVER describe steps without executing them
@@ -1478,82 +1633,82 @@ REMEMBER:
 - No tool call = task not started
 - Users want results, not explanations of how you'd get results
 - Think → Plan → ACT (tools) → Observe → Correct`;
-        return {
-          messages: [{
-            role: "system",
-            content: { type: "text", text: autonomousPrompt }
-          }]
-        };
-      }
-      
-      case "skill-loader": {
-        const skillName = a?.skillName;
-        let skillsContent = "";
-        
-        // Try to load all available skills
-        const skillPaths = [
-          path.join(process.env.HOME || "~", ".agents/skills"),
-          path.join(process.cwd(), "skills"),
-          path.join(process.cwd(), ".qwen/skills")
-        ];
-        
-        const availableSkills: Array<{ name: string; source: string }> = [];
-        
-        for (const skillPath of skillPaths) {
-          try {
-            const entries = await fs.readdir(skillPath, { withFileTypes: true });
-            for (const entry of entries) {
-              if (entry.isDirectory()) {
-                const skillFile = path.join(skillPath, entry.name, "SKILL.md");
-                try {
-                  await fs.access(skillFile);
-                  availableSkills.push({ name: entry.name, source: skillPath });
-                } catch {
-                  // No SKILL.md in this directory
-                }
-              }
-            }
-          } catch {
-            // Path doesn't exist, continue
-          }
-        }
-        
-        if (skillName) {
-          // Load specific skill
-          for (const skillPath of skillPaths) {
-            const skillFile = path.join(skillPath, skillName, "SKILL.md");
-            try {
-              const content = await fs.readFile(skillFile, "utf-8");
-              skillsContent = `\n=== SKILL: ${skillName} ===\n${content}\n========================\n`;
-              break;
-            } catch {
-              continue;
-            }
-          }
-          if (!skillsContent) {
-            skillsContent = `Skill '${skillName}' not found. Available skills: ${availableSkills.map(s => s.name).join(", ") || "none"}`;
-          }
-        } else {
-          // List all skills
-          skillsContent = `Available Skills:\n${availableSkills.map(s => `- ${s.name} (from ${s.source})`).join("\n") || "No skills found"}`;
-        }
-        
-        return {
-          messages: [{
-            role: "user",
-            content: { type: "text", text: skillsContent }
-          }]
-        };
-      }
-      
-      case "task-planner": {
-        const task = a?.task || "Unknown task";
-        return {
-          messages: [{
-            role: "user",
-            content: {
-              type: "text",
-              text: `Plan this task using sequential_thinking and todo_write:
+ return {
+ messages: [{
+ role: "system",
+ content: { type: "text", text: autonomousPrompt }
+ }]
+ };
+ }
+ 
+ case "skill-loader": {
+ const skillName = a?.skillName;
+ let skillsContent = "";
+ 
+ // Try to load all available skills
+ const skillPaths = [
+ path.join(process.env.HOME || "~", ".agents/skills"),
+ path.join(process.cwd(), "skills"),
+ path.join(process.cwd(), ".qwen/skills")
+ ];
+ 
+ const availableSkills: Array<{ name: string; source: string }> = [];
+ 
+ for (const skillPath of skillPaths) {
+ try {
+ const entries = await fs.readdir(skillPath, { withFileTypes: true });
+ for (const entry of entries) {
+ if (entry.isDirectory()) {
+ const skillFile = path.join(skillPath, entry.name, "SKILL.md");
+ try {
+ await fs.access(skillFile);
+ availableSkills.push({ name: entry.name, source: skillPath });
+ } catch {
+ // No SKILL.md in this directory
+ }
+ }
+ }
+ } catch {
+ // Path doesn't exist, continue
+ }
+ }
+ 
+ if (skillName) {
+ // Load specific skill
+ for (const skillPath of skillPaths) {
+ const skillFile = path.join(skillPath, skillName, "SKILL.md");
+ try {
+ const content = await fs.readFile(skillFile, "utf-8");
+ skillsContent = `\n=== SKILL: ${skillName} ===\n${content}\n========================\n`;
+ break;
+ } catch {
+ continue;
+ }
+ }
+ if (!skillsContent) {
+ skillsContent = `Skill '${skillName}' not found. Available skills: ${availableSkills.map(s => s.name).join(", ") || "none"}`;
+ }
+ } else {
+ // List all skills
+ skillsContent = `Available Skills:\n${availableSkills.map(s => `- ${s.name} (from ${s.source})`).join("\n") || "No skills found"}`;
+ }
+ 
+ return {
+ messages: [{
+ role: "user",
+ content: { type: "text", text: skillsContent }
+ }]
+ };
+ }
+ 
+ case "task-planner": {
+ const task = a?.task || "Unknown task";
+ return {
+ messages: [{
+ role: "user",
+ content: {
+ type: "text",
+ text: `Plan this task using sequential_thinking and todo_write:
 
 ${task}
 
@@ -1565,35 +1720,35 @@ Break it down into:
 
 Use sequential_thinking for each major decision.
 Track progress with todo_write.`
-            }
-          }]
-        };
-      }
-      
-      default:
-        throw new Error(`Unknown prompt: ${name}`);
-    }
-  } catch (e: any) {
-    throw new Error(`Failed to get prompt '${name}': ${e.message}`);
-  }
+ }
+ }]
+ };
+ }
+ 
+ default:
+ throw new Error(`Unknown prompt: ${name}`);
+ }
+ } catch (e: any) {
+ throw new Error(`Failed to get prompt '${name}': ${e.message}`);
+ }
 });
 
 async function main() {
-  console.error(`🌐 qwen-core v${pkg.version} starting...`);
-  
-  // Initialize path validation
-  initAllowedDirs();
-  console.error(`🔒 ${getPathRestrictionMessage()}`);
-  
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("✅ Ready - 28 tools + 3 prompts loaded");
-  console.error("📦 Categories: File (8), Search (2), Git (0), Time (2), PDF (1), System (1), Skills (3), Agent (3), Core (8)");
-  console.error("🧠 Prompts: autonomous-agent, skill-loader, task-planner");
-  console.error("📁 Skills auto-load from: ~/.agents/skills/, ./skills/, ./.qwen/skills/");
+ console.error(` qwen-core v${pkg.version} starting...`);
+ 
+ // Initialize path validation
+ initAllowedDirs();
+ console.error(` ${getPathRestrictionMessage()}`);
+ 
+ const transport = new StdioServerTransport();
+ await server.connect(transport);
+ console.error(" Ready - 28 tools + 3 prompts loaded");
+ console.error(" Categories: File (8), Search (2), Git (0), Time (2), PDF (1), System (1), Skills (3), Agent (3), Core (8)");
+ console.error(" Prompts: autonomous-agent, skill-loader, task-planner");
+ console.error(" Skills auto-load from: ~/.agents/skills/, ./skills/, ./.qwen/skills/");
 }
 
 main().catch(e => { 
-  console.error("💥 Fatal error:", e); 
-  process.exit(1); 
+ console.error(" Fatal error:", e); 
+ process.exit(1); 
 });

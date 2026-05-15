@@ -1,166 +1,166 @@
 import chalk from 'chalk';
 
 export interface ThoughtData {
-  thought: string;
-  thoughtNumber: number;
-  totalThoughts: number;
-  isRevision?: boolean;
-  revisesThought?: number;
-  branchFromThought?: number;
-  branchId?: string;
-  needsMoreThoughts?: boolean;
-  nextThoughtNeeded: boolean;
+ thought: string;
+ thoughtNumber: number;
+ totalThoughts: number;
+ isRevision?: boolean;
+ revisesThought?: number;
+ branchFromThought?: number;
+ branchId?: string;
+ needsMoreThoughts?: boolean;
+ nextThoughtNeeded: boolean;
 }
 
 export interface ThoughtResult {
-  thoughtNumber: number;
-  totalThoughts: number;
-  nextThoughtNeeded: boolean;
-  branches: string[];
-  thoughtHistoryLength: number;
+ thoughtNumber: number;
+ totalThoughts: number;
+ nextThoughtNeeded: boolean;
+ branches: string[];
+ thoughtHistoryLength: number;
 }
 
 /** Safe boolean coercion that correctly handles string "false" */
 export function coerceBoolean(val: unknown): boolean {
-  if (typeof val === "boolean") return val;
-  if (typeof val === "string") {
-    if (val.toLowerCase() === "true") return true;
-    if (val.toLowerCase() === "false") return false;
-  }
-  return false;
+ if (typeof val === "boolean") return val;
+ if (typeof val === "string") {
+ if (val.toLowerCase() === "true") return true;
+ if (val.toLowerCase() === "false") return false;
+ }
+ return false;
 }
 
 export class SequentialThinkingServer {
-  private thoughtHistory: ThoughtData[] = [];
-  private branches: Record<string, ThoughtData[]> = {};
-  private disableThoughtLogging: boolean;
+ private thoughtHistory: ThoughtData[] = [];
+ private branches: Record<string, ThoughtData[]> = {};
+ private disableThoughtLogging: boolean;
 
-  constructor() {
-    this.disableThoughtLogging = (process.env.DISABLE_THOUGHT_LOGGING || "").toLowerCase() === "true";
-  }
+ constructor() {
+ this.disableThoughtLogging = (process.env.DISABLE_THOUGHT_LOGGING || "").toLowerCase() === "true";
+ }
 
-  private formatThought(thoughtData: ThoughtData): string {
-    const { thoughtNumber, totalThoughts, thought, isRevision, revisesThought, branchFromThought, branchId } = thoughtData;
+ private formatThought(thoughtData: ThoughtData): string {
+ const { thoughtNumber, totalThoughts, thought, isRevision, revisesThought, branchFromThought, branchId } = thoughtData;
 
-    let prefix = '';
-    let context = '';
+ let prefix = '';
+ let context = '';
 
-    if (isRevision) {
-      prefix = chalk.yellow('🔄 Revision');
-      context = ` (revising thought ${revisesThought})`;
-    } else if (branchFromThought) {
-      prefix = chalk.green('🌿 Branch');
-      context = ` (from thought ${branchFromThought}, ID: ${branchId})`;
-    } else {
-      prefix = chalk.blue('💭 Thought');
-      context = '';
-    }
+ if (isRevision) {
+ prefix = chalk.yellow(' Revision');
+ context = ` (revising thought ${revisesThought})`;
+ } else if (branchFromThought) {
+ prefix = chalk.green(' Branch');
+ context = ` (from thought ${branchFromThought}, ID: ${branchId})`;
+ } else {
+ prefix = chalk.blue(' Thought');
+ context = '';
+ }
 
-    const header = `${prefix} ${thoughtNumber}/${totalThoughts}${context}`;
-    const border = '─'.repeat(Math.max(header.length, thought.length) + 4);
+ const header = `${prefix} ${thoughtNumber}/${totalThoughts}${context}`;
+ const border = ''.repeat(Math.max(header.length, thought.length) + 4);
 
-    return `
-┌${border}┐
-│ ${header} │
-├${border}┤
-│ ${thought.padEnd(border.length - 2)} │
-└${border}┘`;
-  }
+ return `
+${border}
+ ${header} 
+${border}
+ ${thought.padEnd(border.length - 2)} 
+${border}`;
+ }
 
-  public processThought(input: ThoughtData): { content: Array<{ type: "text"; text: string }>; isError?: boolean } {
-    try {
-      if (input.thoughtNumber > input.totalThoughts) {
-        input.totalThoughts = input.thoughtNumber;
-      }
+ public processThought(input: ThoughtData): { content: Array<{ type: "text"; text: string }>; isError?: boolean } {
+ try {
+ if (input.thoughtNumber > input.totalThoughts) {
+ input.totalThoughts = input.thoughtNumber;
+ }
 
-      this.thoughtHistory.push(input);
+ this.thoughtHistory.push(input);
 
-      if (input.branchFromThought && input.branchId) {
-        if (!this.branches[input.branchId]) {
-          this.branches[input.branchId] = [];
-        }
-        this.branches[input.branchId].push(input);
-      }
+ if (input.branchFromThought && input.branchId) {
+ if (!this.branches[input.branchId]) {
+ this.branches[input.branchId] = [];
+ }
+ this.branches[input.branchId].push(input);
+ }
 
-      if (!this.disableThoughtLogging) {
-        const formattedThought = this.formatThought(input);
-        console.error(formattedThought);
-      }
+ if (!this.disableThoughtLogging) {
+ const formattedThought = this.formatThought(input);
+ console.error(formattedThought);
+ }
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            thoughtNumber: input.thoughtNumber,
-            totalThoughts: input.totalThoughts,
-            nextThoughtNeeded: input.nextThoughtNeeded,
-            branches: Object.keys(this.branches),
-            thoughtHistoryLength: this.thoughtHistory.length
-          }, null, 2)
-        }]
-      };
-    } catch (error) {
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            error: error instanceof Error ? error.message : String(error),
-            status: 'failed'
-          }, null, 2)
-        }],
-        isError: true
-      };
-    }
-  }
+ return {
+ content: [{
+ type: "text" as const,
+ text: JSON.stringify({
+ thoughtNumber: input.thoughtNumber,
+ totalThoughts: input.totalThoughts,
+ nextThoughtNeeded: input.nextThoughtNeeded,
+ branches: Object.keys(this.branches),
+ thoughtHistoryLength: this.thoughtHistory.length
+ }, null, 2)
+ }]
+ };
+ } catch (error) {
+ return {
+ content: [{
+ type: "text" as const,
+ text: JSON.stringify({
+ error: error instanceof Error ? error.message : String(error),
+ status: 'failed'
+ }, null, 2)
+ }],
+ isError: true
+ };
+ }
+ }
 
-  public getHistory(): ThoughtData[] {
-    return [...this.thoughtHistory];
-  }
+ public getHistory(): ThoughtData[] {
+ return [...this.thoughtHistory];
+ }
 
-  public clearHistory() {
-    this.thoughtHistory.length = 0;
-    Object.keys(this.branches).forEach(key => delete this.branches[key]);
-  }
+ public clearHistory() {
+ this.thoughtHistory.length = 0;
+ Object.keys(this.branches).forEach(key => delete this.branches[key]);
+ }
 }
 
 const thinkingServer = new SequentialThinkingServer();
 
 export async function executeSequentialThinking(args: {
-  thought: string;
-  thoughtNumber: number;
-  totalThoughts: number;
-  nextThoughtNeeded: boolean;
-  isRevision?: boolean;
-  revisesThought?: number;
-  branchFromThought?: number;
-  branchId?: string;
-  needsMoreThoughts?: boolean;
+ thought: string;
+ thoughtNumber: number;
+ totalThoughts: number;
+ nextThoughtNeeded: boolean;
+ isRevision?: boolean;
+ revisesThought?: number;
+ branchFromThought?: number;
+ branchId?: string;
+ needsMoreThoughts?: boolean;
 }): Promise<any> {
-  const processedArgs = {
-    ...args,
-    nextThoughtNeeded: coerceBoolean(args.nextThoughtNeeded),
-    isRevision: args.isRevision !== undefined ? coerceBoolean(args.isRevision) : undefined,
-    needsMoreThoughts: args.needsMoreThoughts !== undefined ? coerceBoolean(args.needsMoreThoughts) : undefined
-  };
+ const processedArgs = {
+ ...args,
+ nextThoughtNeeded: coerceBoolean(args.nextThoughtNeeded),
+ isRevision: args.isRevision !== undefined ? coerceBoolean(args.isRevision) : undefined,
+ needsMoreThoughts: args.needsMoreThoughts !== undefined ? coerceBoolean(args.needsMoreThoughts) : undefined
+ };
 
-  const result = thinkingServer.processThought(processedArgs);
+ const result = thinkingServer.processThought(processedArgs);
 
-  if (result.isError) {
-    return { content: result.content, isError: true };
-  }
+ if (result.isError) {
+ return { content: result.content, isError: true };
+ }
 
-  const parsedContent = JSON.parse(result.content[0].text);
+ const parsedContent = JSON.parse(result.content[0].text);
 
-  return {
-    content: result.content,
-    structuredContent: parsedContent
-  };
+ return {
+ content: result.content,
+ structuredContent: parsedContent
+ };
 }
 
 export function getThinkingHistory(): ThoughtData[] {
-  return thinkingServer.getHistory();
+ return thinkingServer.getHistory();
 }
 
 export function clearThinkingHistory() {
-  thinkingServer.clearHistory();
+ thinkingServer.clearHistory();
 }
