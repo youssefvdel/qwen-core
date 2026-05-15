@@ -3,10 +3,10 @@
 ![Version](https://img.shields.io/npm/v/qwen-core?label=Version&color=blue)
 ![License](https://img.shields.io/npm/l/qwen-core?color=green)
 ![Platform](https://img.shields.io/badge/Platform-Node.js%2018%2B%20%7C%20TypeScript-blue)
-![Tools](https://img.shields.io/badge/Tools-39-red)
+![Tools](https://img.shields.io/badge/Tools-28-red)
 ![Prompts](https://img.shields.io/badge/Prompts-3-purple)
 
-**All-in-One MCP Server** — 39 tools + 3 prompts for autonomous AI agents.
+**All-in-One MCP Server** — 28 tools + 3 prompts for autonomous AI agents.
 
 https://www.npmjs.com/package/qwen-core
 
@@ -144,16 +144,15 @@ Prevents accidental system file modification.
 
 | Category | Count | Key Tools |
 |----------|-------|-----------|
-| **File** | 15 | `read_file`, `write_file`, `edit_file`, `list_directory`, `create_directory`, `delete_file`, `move_file`, `get_file_info` |
+| **File** | 8 | `read_file`, `write_file`, `edit_file`, `list_directory`, `create_directory`, `delete_file`, `move_file`, `delete_directory` |
+| **File Extended** | 3 | `read_text_file`, `read_multiple_files`, `read_pdf` |
 | **Search** | 2 | `glob_search`, `grep_search` |
-| **Web** | 2 | `web_fetch`, `web_search` |
-| **Git** | 5 | `git_status`, `git_diff`, `git_add`, `git_commit`, `git_log` |
-| **System** | 3 | `bash`, `list_processes`, `kill_process` |
 | **Time** | 2 | `get_current_time`, `convert_time` |
-| **PDF** | 1 | `read_pdf` |
-| **Agent** | 3 | `sequential_thinking`, `todo_write`, `ask_user` |
+| **System** | 1 | `bash` |
+| **Agent** | 3 | `sequential_thinking`, `todo_write`, `autonomous_agent` |
 | **Skills** | 3 | `list_skills`, `load_skill`, `skill_info` |
-| **Core** | 3 | `bash_execute`, `file_read`, `file_write` |
+| **Memory** | 2 | `error_memory_status`, `clear_error_memory` |
+| **Core** | 4 | `bash_execute`, `file_read`, `file_write`, `file_edit` |
 
 ---
 
