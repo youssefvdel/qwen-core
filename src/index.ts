@@ -260,88 +260,6 @@ RELATED TOOLS:
     }
   },
   {
-    name: "web_fetch",
-    description: `Fetch URL content and convert HTML to markdown.
-
-USAGE PATTERNS:
-- Fetch docs: web_fetch { url: "https://react.dev/reference/react" }
-- Fetch API: web_fetch { url: "https://api.example.com/docs" }
-- Fetch article: web_fetch { url: "https://example.com/blog/post" }
-- Limit length: web_fetch { url: "https://long-article.com", maxLength: 10000 }
-
-BEST PRACTICES:
-- Works best with documentation sites
-- Strips scripts, styles, and HTML tags
-- Converts headings, lists, links to markdown
-- Use maxLength to limit response size
-- May not work with JavaScript-heavy sites
-
-WHEN TO USE:
-- Reading API documentation
-- Fetching tutorial content
-- Getting reference material
-- Research during development
-
-LIMITATIONS:
-- No JavaScript execution (SPA content may be missing)
-- May not work behind auth/login
-- Complex layouts may lose formatting
-
-RELATED TOOLS:
-- Use after: web_search (find relevant URLs)
-- Use with: write_file (save fetched content)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        url: { type: "string", description: "URL to fetch (https://...)" },
-        maxLength: { type: "number", description: "Max characters to return (default: 5000)" }
-      },
-      required: ["url"]
-    }
-  },
-  {
-    name: "web_search",
-    description: `Search the web via DuckDuckGo for information and documentation.
-
-USAGE PATTERNS:
-- Find docs: web_search { query: "React useEffect cleanup documentation" }
-- Find solutions: web_search { query: "TypeScript generic constraint error TS2344" }
-- Find libraries: web_search { query: "best PDF parsing library Node.js 2025" }
-- Multiple results: web_search { query: "MCP server tutorial", numResults: 10 }
-
-BEST PRACTICES:
-- Be specific in search query for better results
-- Include technology names (React, TypeScript, Node.js)
-- Include error codes for error searches
-- Use numResults for broader research
-- Follow up with web_fetch on result URLs
-
-COMMON USE CASES:
-- Finding API documentation
-- Solving error messages
-- Discovering libraries/packages
-- Research best practices
-- Finding tutorials and examples
-
-SEARCH TIPS:
-- "React hooks best practices site:react.dev" - official docs only
-- "TypeScript generic array filter" - specific problem
-- "npm package json schema validation" - library search
-- Include year for current info: "2025"
-
-RELATED TOOLS:
-- Use after: web_fetch (read result pages)
-- Use with: write_file (save research notes)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: "Search query (be specific for better results)" },
-        numResults: { type: "number", description: "Number of results to return (default: 5)" }
-      },
-      required: ["query"]
-    }
-  },
-  {
     name: "todo_write",
     description: `Manage a structured todo list for tracking task progress.
 
@@ -394,47 +312,6 @@ RELATED TOOLS:
         }
       },
       required: ["todos"]
-    }
-  },
-  {
-    name: "ask_user",
-    description: `Prompt for user input during execution when clarification is needed.
-
-USAGE PATTERNS:
-- Clarify requirements: ask_user { question: "Should I create a new file or modify existing?" }
-- Confirm action: ask_user { question: "This will delete 5 files. Continue?" }
-- Get preferences: ask_user { question: "Which testing framework: Jest or Vitest?" }
-- Resolve ambiguity: ask_user { question: "Found 3 API endpoints. Which should I fix?" }
-
-BEST PRACTICES:
-- Use when multiple valid approaches exist
-- Ask before destructive operations
-- Clarify ambiguous requirements early
-- Provide context in the question
-- Offer specific options when possible
-
-WHEN TO USE:
-- Requirements are unclear
-- Multiple valid implementations
-- Destructive operations (delete, overwrite)
-- User preference decisions
-- Cannot proceed without input
-
-QUESTION FORMATS:
-- Yes/No: "Should I...?"
-- Multiple choice: "Option A or Option B?"
-- Open: "What should...?"
-- Confirmation: "This will X. Continue?"
-
-RELATED TOOLS:
-- Use before: sequential_thinking (analyze options)
-- Use after: todo_write (update plan based on answer)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        question: { type: "string", description: "Clear question for the user" }
-      },
-      required: ["question"]
     }
   },
   {
@@ -645,206 +522,6 @@ RELATED TOOLS:
     inputSchema: {
       type: "object",
       properties: {}
-    }
-  },
-  {
-    name: "git_status",
-    description: `Show git working tree status (modified, staged, untracked files).
-
-USAGE PATTERNS:
-- Check status: git_status { repoPath: "/path/to/repo" }
-- Current dir: git_status { repoPath: "." }
-
-BEST PRACTICES:
-- Always check before committing
-- Review changes after edits
-- Verify clean working tree before branch switches
-- Use at start of debugging session
-
-WHEN TO USE:
-- Before git_commit (verify changes)
-- After file edits (see what changed)
-- Before switching branches
-- Start of work session
-
-OUTPUT FORMAT:
-- Shows each file with status: modified, staged, untracked
-- Clean working tree shows "Working tree clean"
-
-RELATED TOOLS:
-- Use before: git_diff (see detailed changes)
-- Use before: git_add (stage changes)
-- Use before: git_commit (verify before commit)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        repoPath: { type: "string", description: "Path to git repository (use '.' for current directory)" }
-      },
-      required: ["repoPath"]
-    }
-  },
-  {
-    name: "git_diff",
-    description: `Show git diff (staged changes, unstaged changes, or between commits).
-
-USAGE PATTERNS:
-- Unstaged changes: git_diff { repoPath: "/path/to/repo" }
-- Staged changes: git_diff { repoPath: "/path/to/repo", staged: true }
-- Compare branch: git_diff { repoPath: "/path/to/repo", target: "main" }
-- Compare commit: git_diff { repoPath: "/path/to/repo", target: "abc1234" }
-
-BEST PRACTICES:
-- Review staged changes before committing
-- Compare with main before PR
-- Verify specific file changes
-- Check what will be committed
-
-PARAMETERS:
-- repoPath: Path to git repository (required)
-- staged: Show staged changes only (optional, default: false)
-- target: Branch or commit hash to compare against (optional)
-
-WHEN TO USE:
-- Before git_commit (review changes)
-- Before creating PR (compare with main)
-- After edits (verify modifications)
-- Debugging (see what changed recently)
-
-RELATED TOOLS:
-- Use before: git_status (see file list first)
-- Use before: git_commit (review before commit)
-- Use after: git_log (find commit to compare)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        repoPath: { type: "string", description: "Path to git repository" },
-        staged: { type: "boolean", description: "Show staged changes only (default: false shows unstaged)" },
-        target: { type: "string", description: "Branch or commit hash for comparison (e.g., 'main', 'HEAD~1')" }
-      },
-      required: ["repoPath"]
-    }
-  },
-  {
-    name: "git_commit",
-    description: `Commit staged changes with a commit message.
-
-USAGE PATTERNS:
-- Simple commit: git_commit { repoPath: "/path/to/repo", message: "Fix: resolve null pointer in API handler" }
-- Feature commit: git_commit { repoPath: ".", message: "feat: add user authentication" }
-- Refactor commit: git_commit { repoPath: ".", message: "refactor: simplify validation logic" }
-
-COMMIT MESSAGE FORMAT (Conventional Commits):
-- "fix: description" - bug fixes
-- "feat: description" - new features
-- "refactor: description" - code refactoring
-- "docs: description" - documentation changes
-- "test: description" - test changes
-- "chore: description" - maintenance tasks
-
-BEST PRACTICES:
-- ALWAYS run git_status and git_diff before committing
-- Use conventional commit format (type: description)
-- Be specific and descriptive
-- One logical change per commit
-- Present tense ("add" not "added")
-
-WORKFLOW:
-1. git_status (see what changed)
-2. git_diff (review changes)
-3. git_add (stage files if needed)
-4. git_commit (commit with message)
-
-RELATED TOOLS:
-- REQUIRED before: git_status, git_diff
-- Use before: git_add (if files not staged)
-- Use after: git_log (verify commit)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        repoPath: { type: "string", description: "Path to git repository" },
-        message: { type: "string", description: "Commit message (use conventional format: 'fix: description')" }
-      },
-      required: ["repoPath", "message"]
-    }
-  },
-  {
-    name: "git_add",
-    description: `Stage files for commit.
-
-USAGE PATTERNS:
-- Stage single file: git_add { repoPath: "/path/to/repo", files: ["src/index.ts"] }
-- Stage multiple: git_add { repoPath: ".", files: ["src/a.ts", "src/b.ts"] }
-- Stage all: git_add { repoPath: ".", files: ["."] }
-- Stage by pattern: git_add { repoPath: ".", files: ["src/**/*.ts"] }
-
-BEST PRACTICES:
-- Stage related files together
-- Review with git_diff --staged after staging
-- Don't stage generated files (dist/, build/)
-- Stage incrementally for logical commits
-
-COMMON PATTERNS:
-- ["."] - stage all changes
-- ["src/index.ts"] - specific file
-- ["src/**/*.ts"] - all TS files in src (if shell supports glob)
-- ["package.json", "package-lock.json"] - related files
-
-WORKFLOW:
-1. Edit files
-2. git_status (see modified files)
-3. git_add (stage desired files)
-4. git_diff --staged (review staged changes)
-5. git_commit (commit)
-
-RELATED TOOLS:
-- Use before: git_status (see what to stage)
-- Use after: git_diff with staged: true (verify)
-- Use before: git_commit (stage before commit)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        repoPath: { type: "string", description: "Path to git repository" },
-        files: { type: "array", items: { type: "string" }, description: "Array of file paths to stage (use '.' for all)" }
-      },
-      required: ["repoPath", "files"]
-    }
-  },
-  {
-    name: "git_log",
-    description: `Show git commit history.
-
-USAGE PATTERNS:
-- Recent commits: git_log { repoPath: "/path/to/repo" }
-- Last 5 commits: git_log { repoPath: ".", maxCount: 5 }
-- Full history: git_log { repoPath: ".", maxCount: 100 }
-
-BEST PRACTICES:
-- Check recent commits before new work
-- Find commit hash for git_diff comparison
-- Understand project history
-- Verify your commits were recorded
-
-OUTPUT FORMAT:
-- Shows: hash, message, author, date
-- Ordered newest first
-- Default: 10 commits
-
-WHEN TO USE:
-- Finding recent changes
-- Getting commit hashes
-- Understanding project timeline
-- Verifying commits succeeded
-
-RELATED TOOLS:
-- Use after: git_commit (verify commit recorded)
-- Use before: git_diff with target (get commit hash)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        repoPath: { type: "string", description: "Path to git repository" },
-        maxCount: { type: "number", description: "Max commits to show (default: 10)" }
-      },
-      required: ["repoPath"]
     }
   },
   {
@@ -1217,103 +894,6 @@ RELATED TOOLS:
     }
   },
   {
-    name: "list_directory_with_sizes",
-    description: `List directory contents with file sizes and summary statistics.
-
-USAGE PATTERNS:
-- With sizes: list_directory_with_sizes { path: "src/" }
-- Sort by size: list_directory_with_sizes { path: "dist/", sortBy: "size" }
-- Sort by name: list_directory_with_sizes { path: "src/", sortBy: "name" }
-
-OUTPUT FORMAT:
-[FILE] large-file.js (1250.5 KB)
-[FILE] medium-file.ts (340.2 KB)
-[DIR]  components
-[FILE] small-file.css (12.3 KB)
-
-📊 Summary: 15 files, 2450.8 KB total
-
-PARAMETERS:
-- path: Directory path (required)
-- sortBy: Sort by "name" or "size" (optional, default: name)
-
-BEST PRACTICES:
-- Use to find large files
-- Sort by size to identify bloat
-- Check dist/ folder sizes
-- Find files to optimize
-
-WHEN TO USE:
-- Finding large files to optimize
-- Checking build output sizes
-- Identifying disk usage
-- Cleaning up directories
-
-RELATED TOOLS:
-- Use before: list_directory (simpler view)
-- Use before: delete_file (identify files to remove)
-- Use with: directory_tree (full structure)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Directory path to list" },
-        sortBy: { type: "string", enum: ["name", "size"], description: "Sort entries by name or size" }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "directory_tree",
-    description: `Get recursive JSON tree structure of directory contents.
-
-USAGE PATTERNS:
-- Full tree: directory_tree { path: "src/" }
-- With excludes: directory_tree { path: ".", excludePatterns: ["node_modules", "dist", ".git"] }
-- Project structure: directory_tree { path: "/path/to/project" }
-
-OUTPUT FORMAT (JSON):
-[
-  {
-    "name": "src",
-    "type": "directory",
-    "children": [
-      { "name": "index.ts", "type": "file" },
-      { "name": "utils", "type": "directory", "children": [...] }
-    ]
-  }
-]
-
-PARAMETERS:
-- path: Starting directory (required)
-- excludePatterns: Glob patterns to exclude (optional)
-  Common: ["node_modules", "dist", "build", ".git", "*.log"]
-
-BEST PRACTICES:
-- Exclude node_modules, dist, .git for readable output
-- Use for understanding project structure
-- More detailed than list_directory
-- JSON format easy to parse
-
-WHEN TO USE:
-- Understanding codebase structure
-- Documentation generation
-- Finding nested files
-- Visualizing project layout
-
-RELATED TOOLS:
-- Use before: list_directory (simpler view)
-- Use before: glob_search (find specific files)
-- Use with: read_file (examine found files)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Starting directory path" },
-        excludePatterns: { type: "array", items: { type: "string" }, description: "Glob patterns to exclude (e.g., ['node_modules', 'dist'])" }
-      },
-      required: ["path"]
-    }
-  },
-  {
     name: "create_directory",
     description: `Create new directory or ensure it exists (creates parents if needed).
 
@@ -1382,99 +962,6 @@ RELATED TOOLS:
         destination: { type: "string", description: "Destination path (must have existing parent directory)" }
       },
       required: ["source", "destination"]
-    }
-  },
-  {
-    name: "search_files",
-    description: `Recursively search for files/directories matching patterns.
-
-USAGE PATTERNS:
-- Find TypeScript: search_files { path: ".", pattern: "**/*.ts" }
-- Find tests: search_files { path: "src/", pattern: "**/*.test.ts" }
-- Find configs: search_files { path: ".", pattern: "**/package.json" }
-- Exclude node_modules: search_files { path: ".", pattern: "**/*.ts", excludePatterns: ["node_modules", "dist"] }
-
-PARAMETERS:
-- path: Starting directory (required)
-- pattern: Search pattern - glob-style (required)
-- excludePatterns: Patterns to exclude (optional)
-  Common: ["node_modules", "dist", ".git", "*.log"]
-
-PATTERN SYNTAX:
-- "*" = any characters except /
-- "**" = any characters including / (recursive)
-- "?" = single character
-- "{a,b}" = match a or b
-
-BEST PRACTICES:
-- Always exclude node_modules, dist, .git
-- Use specific patterns for faster search
-- Returns absolute paths
-- Similar to glob_search but with exclusions
-
-WHEN TO USE:
-- Finding files by name pattern
-- Locating specific file types
-- Searching with exclusions
-- Project-wide file search
-
-RELATED TOOLS:
-- Use before: glob_search (alternative, no exclusions)
-- Use after: read_file (examine found files)
-- Use with: grep_search (search content in found files)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Starting directory for search" },
-        pattern: { type: "string", description: "Search pattern - glob-style (e.g., '**/*.ts')" },
-        excludePatterns: { type: "array", items: { type: "string" }, description: "Patterns to exclude (e.g., ['node_modules', 'dist'])" }
-      },
-      required: ["path", "pattern"]
-    }
-  },
-  {
-    name: "get_file_info",
-    description: `Get detailed file/directory metadata (size, dates, permissions).
-
-USAGE PATTERNS:
-- File info: get_file_info { path: "src/index.ts" }
-- Dir info: get_file_info { path: "src/" }
-- Check size: get_file_info { path: "dist/bundle.js" }
-- Check permissions: get_file_info { path: "scripts/deploy.sh" }
-
-OUTPUT FORMAT (JSON):
-{
-  "path": "src/index.ts",
-  "type": "file",
-  "size": 12345,
-  "created": "2025-01-01T00:00:00.000Z",
-  "modified": "2025-01-15T00:00:00.000Z",
-  "accessed": "2025-01-15T12:00:00.000Z",
-  "permissions": "644"
-}
-
-BEST PRACTICES:
-- Check file exists before operations
-- Verify file size before reading
-- Check modification time for caching
-- Review permissions for scripts
-
-WHEN TO USE:
-- Verifying file exists
-- Checking file size
-- Finding last modified time
-- Debugging permission issues
-
-RELATED TOOLS:
-- Use before: read_file (verify exists and size)
-- Use before: delete_file (confirm target)
-- Use with: list_directory_with_sizes`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "File or directory path to get metadata for" }
-      },
-      required: ["path"]
     }
   },
   {
@@ -1571,134 +1058,6 @@ RELATED TOOLS:
       required: ["path"]
     }
   },
-  // Desktop Commander Tools (system commands)
-  {
-    name: "execute_command",
-    description: `Execute system command with output capture (alias for bash).
-
-USAGE PATTERNS:
-- Run script: execute_command { command: "npm run build" }
-- Check system: execute_command { command: "uname -a" }
-- List files: execute_command { command: "ls -la" }
-- Process info: execute_command { command: "ps aux | grep node" }
-
-BEST PRACTICES:
-- Same as bash tool (they are aliases)
-- Set cwd for project-specific commands
-- Use timeout for long-running commands
-- Capture output to verify success
-
-COMMON COMMANDS:
-- "npm install", "npm run build", "npm test"
-- "git status", "git diff", "git log"
-- "ls -la", "cat file.txt", "grep pattern"
-- "docker ps", "docker logs container"
-- "ps aux", "kill PID", "top"
-
-WHEN TO USE:
-- Running build scripts
-- System administration
-- Process management
-- File operations
-
-RELATED TOOLS:
-- Alias for: bash (same functionality)
-- Use with: list_processes (see processes)
-- Use with: kill_process (terminate processes)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        command: { type: "string", description: "Command to execute" },
-        cwd: { type: "string", description: "Working directory for command" }
-      },
-      required: ["command"]
-    }
-  },
-  {
-    name: "list_processes",
-    description: `List running processes with optional filtering.
-
-USAGE PATTERNS:
-- All processes: list_processes {}
-- Filter by name: list_processes { filter: "node" }
-- Find specific: list_processes { filter: "python" }
-- Check app: list_processes { filter: "qwen" }
-
-BEST PRACTICES:
-- Use filter to narrow results
-- Find process PID before killing
-- Check if service is running
-- Monitor resource usage
-
-OUTPUT FORMAT:
-- Shows: USER, PID, %CPU, %MEM, VSZ, RSS, TTY, STAT, START, TIME, COMMAND
-- Filtered to matching processes
-- Limited to first 50 results
-
-WHEN TO USE:
-- Finding process to kill
-- Checking if service is running
-- Monitoring system processes
-- Debugging hung applications
-
-RELATED TOOLS:
-- Use before: kill_process (get PID)
-- Use with: execute_command (run ps manually)
-- Use with: bash (alternative process listing)`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        filter: { type: "string", description: "Filter pattern for process names (e.g., 'node', 'python')" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "kill_process",
-    description: `Terminate a running process by PID.
-
-USAGE PATTERNS:
-- Kill by PID: kill_process { pid: 12345 }
-- Stop server: kill_process { pid: 54321 }
-- Terminate hung: kill_process { pid: 98765 }
-
-BEST PRACTICES:
-- ALWAYS verify PID with list_processes first
-- Confirm it's the correct process
-- Use SIGTERM first (default), SIGKILL if needed
-- Check process is actually terminated after
-
-SAFETY CHECKLIST:
-1. list_processes to find correct PID
-2. Verify process name and command
-3. Confirm it's safe to terminate
-4. Kill the process
-5. Verify with list_processes
-
-WHEN TO USE:
-- Stopping stuck processes
-- Terminating test servers
-- Cleaning up orphaned processes
-- Force-stopping applications
-
-CAUTION:
-- Terminates process immediately
-- May cause data loss if process has unsaved work
-- Verify PID carefully
-- Don't kill critical system processes
-
-RELATED TOOLS:
-- REQUIRED before: list_processes (find correct PID)
-- Use after: list_processes (verify termination)
-- Alternative: execute_command { command: "kill PID" }`,
-    inputSchema: {
-      type: "object",
-      properties: {
-        pid: { type: "number", description: "Process ID to terminate (verify with list_processes first)" }
-      },
-      required: ["pid"]
-    }
-  }
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
@@ -1764,41 +1123,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
       
-      case "web_fetch": {
-        const res = await fetch(a.url, { headers: { "User-Agent": "QwenCore/2.0" } });
-        const html = await res.text();
-        const text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]+>/g, "")
-          .replace(/\s+/g, " ")
-          .trim();
-        return { content: [{ type: "text", text: text.slice(0, a.maxLength || 5000) }] };
-      }
-      
-      case "web_search": {
-        const query = encodeURIComponent(a.query);
-        const res = await fetch(`https://duckduckgo.com/html?q=${query}&kl=wt-wt`, { 
-          headers: { "User-Agent": "Mozilla/5.0" } 
-        });
-        const html = await res.text();
-        const results = html.match(/<a class="result__a" href="[^"]+">[^<]+/g)
-          ?.slice(0, a.numResults || 5)
-          .map(a => a.replace(/<[^>]+>/g, "").trim()) || [];
-        return { content: [{ type: "text", text: results.join("\n") || "No results" }] };
-      }
-      
       case "todo_write": {
         const list = a.todos.map((t: any, i: number) => 
           `${i + 1}. [${t.status || "pending"}] ${t.content}`
         ).join("\n");
         return { content: [{ type: "text", text: `📋 Todos:\n${list}` }] };
-      }
-      
-      case "ask_user": {
-        return { 
-          content: [{ type: "text", text: `❓ [Awaiting user input] ${a.question}` }], 
-          isError: false 
-        };
       }
       
       case "sequential_thinking": {
@@ -1842,58 +1171,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { clearErrorMemory } = await import('./agent/AutonomousAgent.js');
         clearErrorMemory();
         return { content: [{ type: "text", text: "✅ Error memory cleared" }] };
-      }
-      
-      case "git_status": {
-        const git = simpleGit(a.repoPath || process.cwd());
-        const status = await git.status();
-        return { 
-          content: [{ 
-            type: "text", 
-            text: `📊 Git Status:\n${status.files.map((f: any) => `  ${f.path} (${f.status})`).join("\n") || "Working tree clean"}` 
-          }] 
-        };
-      }
-      
-      case "git_diff": {
-        const git = simpleGit(a.repoPath || process.cwd());
-        let diff;
-        if (a.staged) {
-          diff = await git.diff(["--cached"]);
-        } else if (a.target) {
-          diff = await git.diff([a.target]);
-        } else {
-          diff = await git.diff();
-        }
-        return { content: [{ type: "text", text: diff || "No changes" }] };
-      }
-      
-      case "git_commit": {
-        const git = simpleGit(a.repoPath || process.cwd());
-        await git.commit(a.message);
-        const log = await git.log({ maxCount: 1 });
-        return { 
-          content: [{ type: "text", text: `✅ Committed: ${log.latest?.hash}\n${log.latest?.message}` }] 
-        };
-      }
-      
-      case "git_add": {
-        const git = simpleGit(a.repoPath || process.cwd());
-        await git.add(a.files);
-        return { content: [{ type: "text", text: `✅ Staged: ${a.files.join(", ")}` }] };
-      }
-      
-      case "git_log": {
-        const git = simpleGit(a.repoPath || process.cwd());
-        const log = await git.log({ maxCount: a.maxCount || 10 });
-        return { 
-          content: [{ 
-            type: "text", 
-            text: log.all.map((c: any, i: number) => 
-              `${i + 1}. ${c.hash.slice(0, 8)} - ${c.message} (${c.author_name}, ${c.date})`
-            ).join("\n") 
-          }] 
-        };
       }
       
       case "get_current_time": {
@@ -2050,67 +1327,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: output || "Empty directory" }] };
       }
       
-      case "list_directory_with_sizes": {
-        const entries = await fs.readdir(a.path, { withFileTypes: true });
-        const items = [];
-        let totalSize = 0;
-        let fileCount = 0;
-        
-        for (const e of entries) {
-          const fullPath = path.join(a.path, e.name);
-          try {
-            const stats = await fs.stat(fullPath);
-            if (e.isFile()) {
-              totalSize += stats.size;
-              fileCount++;
-              items.push({ name: e.name, type: 'file', size: stats.size, modified: stats.mtime });
-            } else {
-              items.push({ name: e.name, type: 'directory', size: 0, modified: stats.mtime });
-            }
-          } catch {}
-        }
-        
-        if (a.sortBy === "size") {
-          items.sort((a, b) => b.size - a.size);
-        } else {
-          items.sort((a, b) => a.name.localeCompare(b.name));
-        }
-        
-        const output = items.map(i => 
-          i.type === 'file' 
-            ? `[FILE] ${i.name} (${(i.size / 1024).toFixed(1)} KB)`
-            : `[DIR]  ${i.name}`
-        ).join('\n');
-        
-        return { 
-          content: [{ 
-            type: "text", 
-            text: `${output}\n\n📊 Summary: ${fileCount} files, ${(totalSize / 1024).toFixed(1)} KB total` 
-          }] 
-        };
-      }
-      
-      case "directory_tree": {
-        async function buildTree(dirPath: string, depth = 0): Promise<any[]> {
-          const entries = await fs.readdir(dirPath, { withFileTypes: true });
-          const result = [];
-          
-          for (const e of entries) {
-            if (e.isDirectory()) {
-              const children = await buildTree(path.join(dirPath, e.name), depth + 1);
-              result.push({ name: e.name, type: 'directory', children });
-            } else {
-              result.push({ name: e.name, type: 'file' });
-            }
-          }
-          
-          return result;
-        }
-        
-        const tree = await buildTree(a.path);
-        return { content: [{ type: "text", text: JSON.stringify(tree, null, 2) }] };
-      }
-      
       case "create_directory": {
         await fs.mkdir(a.path, { recursive: true });
         return { content: [{ type: "text", text: `✅ Created: ${a.path}` }] };
@@ -2121,29 +1337,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: `✅ Moved: ${a.source} → ${a.destination}` }] };
       }
       
-      case "search_files": {
-        const matches = await fg(a.pattern, { 
-          cwd: a.path, 
-          ignore: a.excludePatterns || [],
-          absolute: true 
-        });
-        return { content: [{ type: "text", text: matches.length ? matches.join('\n') : "No matches" }] };
-      }
-      
-      case "get_file_info": {
-        const stats = await fs.stat(a.path);
-        const info = {
-          path: a.path,
-          type: stats.isFile() ? "file" : "directory",
-          size: stats.size,
-          created: stats.birthtime,
-          modified: stats.mtime,
-          accessed: stats.atime,
-          permissions: stats.mode.toString(8).slice(-3)
-        };
-        return { content: [{ type: "text", text: JSON.stringify(info, null, 2) }] };
-      }
-      
       case "delete_file": {
         await fs.unlink(a.path);
         return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
@@ -2152,29 +1345,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "delete_directory": {
         await fs.rm(a.path, { recursive: a.recursive !== false, force: true });
         return { content: [{ type: "text", text: `✅ Deleted: ${a.path}` }] };
-      }
-      
-      // Desktop Commander Tools
-      case "execute_command": {
-        const { stdout, stderr } = await execa(a.command, { 
-          shell: true, 
-          cwd: a.cwd || process.cwd(), 
-          timeout: 30000 
-        });
-        return { content: [{ type: "text", text: stdout || stderr || "✅ Done" }] };
-      }
-      
-      case "list_processes": {
-        const { stdout } = await execa("ps", ["aux"]);
-        const lines = a.filter 
-          ? stdout.split('\n').filter(l => l.includes(a.filter))
-          : stdout.split('\n');
-        return { content: [{ type: "text", text: lines.slice(0, 50).join('\n') || "No processes found" }] };
-      }
-      
-      case "kill_process": {
-        await execa("kill", [String(a.pid)]);
-        return { content: [{ type: "text", text: `✅ Killed process ${a.pid}` }] };
       }
       
       default:
@@ -2240,13 +1410,13 @@ TOOL-FIRST MANDATE:
 
 AVAILABLE TOOLS (USE THEM):
 - File ops: read_file, write_file, edit_file, read_text_file, read_multiple_files
-- Directory: list_directory, directory_tree, create_directory, delete_directory, move_file
-- Search: glob_search (find files), grep_search (find content), search_files
-- Git: git_status, git_diff, git_commit, git_add, git_log
-- System: bash, execute_command, list_processes, kill_process
-- Web: web_fetch (get URL), web_search (search web)
+- Directory: list_directory, create_directory, delete_directory, move_file, delete_file
+- Search: glob_search (find files), grep_search (find content)
+- System: bash
+- Time: get_current_time, convert_time
+- PDF: read_pdf
 - Thinking: sequential_thinking (plan before complex actions)
-- Tasks: todo_write (track progress), ask_user (clarify ambiguity)
+- Tasks: todo_write (track progress)
 - Agent: autonomous_agent (build/test/fix cycles)
 - Skills: list_skills, load_skill, skill_info
 
@@ -2417,8 +1587,8 @@ async function main() {
   
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("✅ Ready - 39 tools + 3 prompts loaded");
-  console.error("📦 Categories: File (15), Search (2), Web (2), Git (5), Time (2), PDF (1), System (3), Skills (3), Agent (3), Core (3)");
+  console.error("✅ Ready - 28 tools + 3 prompts loaded");
+  console.error("📦 Categories: File (8), Search (2), Git (0), Time (2), PDF (1), System (1), Skills (3), Agent (3), Core (8)");
   console.error("🧠 Prompts: autonomous-agent, skill-loader, task-planner");
   console.error("📁 Skills auto-load from: ~/.agents/skills/, ./skills/, ./.qwen/skills/");
 }
