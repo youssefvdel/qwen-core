@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { BaseTool } from './BaseTool.js';
+import { estimateBashTimeout } from '../utils/TimeoutEstimator.js';
 
 const execAsync = promisify(exec);
 
@@ -50,14 +51,19 @@ export class BashTool extends BaseTool {
                 };
             }
 
+            // Dynamic timeout based on command type
+            const timeout = estimateBashTimeout(command);
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
             console.error(`🐚 Executing: ${command}`);
             console.error(`   Working directory: ${cwd}`);
+            console.error(`   Timeout: ${timeoutSeconds}s`);
 
             const startTime = Date.now();
             const { stdout, stderr } = await execAsync(command, {
                 cwd,
                 maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-                timeout: 60000 // 60 second timeout
+                timeout
             });
             const duration = Date.now() - startTime;
 
@@ -72,7 +78,7 @@ export class BashTool extends BaseTool {
             return {
                 content: [{
                     type: "text",
-                    text: `[Command executed in ${duration}ms]\n${truncatedOutput}`
+                    text: `[Command executed in ${duration}ms | Timeout: ${timeoutSeconds}s]\n${truncatedOutput}`
                 }]
             };
         } catch (err: any) {
@@ -80,9 +86,11 @@ export class BashTool extends BaseTool {
 
             // Handle specific error types
             if (err.killed) {
-                errorMessage = 'Command was killed (timeout or signal)';
+                const timeout = estimateBashTimeout(command);
+                errorMessage = `Command was killed (timeout after ${(timeout / 1000).toFixed(1)}s or signal)`;
             } else if (err.code === 'ETIMEDOUT') {
-                errorMessage = 'Command timed out after 60 seconds';
+                const timeout = estimateBashTimeout(command);
+                errorMessage = `Command timed out after ${(timeout / 1000).toFixed(1)} seconds`;
             } else if (err.code === 'ENOENT') {
                 errorMessage = `Command not found: ${err.message}`;
             }

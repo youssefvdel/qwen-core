@@ -2,6 +2,7 @@ import { z } from 'zod';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { BaseTool } from './BaseTool.js';
+import { estimateTimeout } from '../utils/TimeoutEstimator.js';
 
 export class GlobTool extends BaseTool {
     name = "glob_search";
@@ -14,6 +15,15 @@ export class GlobTool extends BaseTool {
 
     async execute({ pattern, path: searchPath = process.cwd() }: { pattern: string; path?: string }) {
         try {
+            // Validate path is within allowed directories
+            const pathValidation = this.validateFilePath(searchPath);
+            if (!pathValidation.valid) {
+                return {
+                    content: [{ type: "text", text: pathValidation.error! }],
+                    isError: true
+                };
+            }
+
             console.error(`🔍 Glob search: ${pattern} in ${searchPath}`);
 
             const resolvedPath = path.resolve(searchPath);
@@ -39,6 +49,16 @@ export class GlobTool extends BaseTool {
                 .replace(/\?/g, '[^/]');
 
             const regex = new RegExp(regexPattern + '$');
+
+            // Determine search depth
+            const isRecursive = pattern.includes('**');
+            const searchDepth = isRecursive ? 'recursive' : 'shallow';
+
+            // Dynamic timeout based on search depth
+            const timeout = estimateTimeout('glob_search', { searchDepth });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
+            console.error(`   Timeout: ${timeoutSeconds}s`);
 
             // Recursive search function
             const search = async (dir: string, depth: number = 0) => {
@@ -86,7 +106,7 @@ export class GlobTool extends BaseTool {
             return {
                 content: [{
                     type: "text",
-                    text: `[Found ${results.length} file(s)]\n\n${relativePaths.slice(0, maxResults).join('\n')}${truncated}`
+                    text: `[Found ${results.length} file(s) | Timeout: ${timeoutSeconds}s]\n\n${relativePaths.slice(0, maxResults).join('\n')}${truncated}`
                 }]
             };
         } catch (err: any) {

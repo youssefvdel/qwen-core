@@ -13,6 +13,15 @@ export class FileReadTool extends BaseTool {
 
     async execute({ path: filePath }: { path: string }) {
         try {
+            // Validate path is within allowed directories
+            const pathValidation = this.validateFilePath(filePath);
+            if (!pathValidation.valid) {
+                return {
+                    content: [{ type: "text", text: pathValidation.error! }],
+                    isError: true
+                };
+            }
+
             // Resolve to absolute path
             const resolvedPath = path.resolve(filePath);
 
@@ -43,6 +52,10 @@ export class FileReadTool extends BaseTool {
             // Read file as UTF-8 text
             const content = await fs.readFile(resolvedPath, 'utf-8');
 
+            // Dynamic timeout based on content size
+            const timeout = this.getTimeout('file_read', { contentSize: stats.size });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
             // Add line numbers for easier reference
             const lines = content.split('\n');
             const numberedContent = lines.map((line, i) => `${i + 1}\t${line}`).join('\n');
@@ -50,7 +63,7 @@ export class FileReadTool extends BaseTool {
             return {
                 content: [{
                     type: "text",
-                    text: `[File: ${resolvedPath}]\n[Lines: ${lines.length}]\n\n${numberedContent}`
+                    text: `[File: ${resolvedPath}]\n[Lines: ${lines.length}]\n[Timeout: ${timeoutSeconds}s]\n\n${numberedContent}`
                 }]
             };
         } catch (err: any) {

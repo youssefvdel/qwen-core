@@ -9,6 +9,8 @@ import fg from "fast-glob";
 import fetch from "node-fetch";
 import simpleGit from "simple-git";
 import { z } from "zod";
+import { initAllowedDirs, getPathRestrictionMessage } from "./utils/PathValidator.js";
+import { getTimeoutDescription } from "./utils/TimeoutEstimator.js";
 
 const server = new Server({ name: "qwen-core", version: "2.0.0" }, { capabilities: { tools: {}, prompts: {} } });
 
@@ -2407,6 +2409,11 @@ Track progress with todo_write.`
 
 async function main() {
   console.error("🌐 qwen-core v2.0.0 starting...");
+  
+  // Initialize path validation
+  initAllowedDirs();
+  console.error(`🔒 ${getPathRestrictionMessage()}`);
+  
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("✅ Ready - 39 tools + 3 prompts loaded");

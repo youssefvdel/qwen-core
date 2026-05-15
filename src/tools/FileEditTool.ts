@@ -15,6 +15,15 @@ export class FileEditTool extends BaseTool {
 
     async execute({ path: filePath, oldText, newText }: { path: string; oldText: string; newText: string }) {
         try {
+            // Validate path is within allowed directories
+            const pathValidation = this.validateFilePath(filePath);
+            if (!pathValidation.valid) {
+                return {
+                    content: [{ type: "text", text: pathValidation.error! }],
+                    isError: true
+                };
+            }
+
             // Resolve to absolute path
             const resolvedPath = path.resolve(filePath);
 
@@ -87,10 +96,14 @@ export class FileEditTool extends BaseTool {
             const removedLines = oldText.split('\n').length;
             const netChange = addedLines - removedLines;
 
+            // Dynamic timeout based on content size
+            const timeout = this.getTimeout('file_edit', { contentSize: content.length });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
             return {
                 content: [{
                     type: "text",
-                    text: `✅ File edited successfully\nPath: ${resolvedPath}\nChanges: +${addedLines} lines, -${removedLines} lines (${netChange >= 0 ? '+' : ''}${netChange} net)`
+                    text: `✅ File edited successfully\nPath: ${resolvedPath}\nChanges: +${addedLines} lines, -${removedLines} lines (${netChange >= 0 ? '+' : ''}${netChange} net)\nTimeout: ${timeoutSeconds}s`
                 }]
             };
         } catch (err: any) {

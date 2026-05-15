@@ -14,6 +14,15 @@ export class FileWriteTool extends BaseTool {
 
     async execute({ path: filePath, content }: { path: string; content: string }) {
         try {
+            // Validate path is within allowed directories
+            const pathValidation = this.validateFilePath(filePath);
+            if (!pathValidation.valid) {
+                return {
+                    content: [{ type: "text", text: pathValidation.error! }],
+                    isError: true
+                };
+            }
+
             // Resolve to absolute path
             const resolvedPath = path.resolve(filePath);
 
@@ -30,10 +39,14 @@ export class FileWriteTool extends BaseTool {
             const stats = await fs.stat(resolvedPath);
             const lineCount = content.split('\n').length;
 
+            // Dynamic timeout based on content size
+            const timeout = this.getTimeout('file_write', { contentSize: content.length });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
             return {
                 content: [{
                     type: "text",
-                    text: `✅ File written successfully\nPath: ${resolvedPath}\nSize: ${stats.size} bytes\nLines: ${lineCount}`
+                    text: `✅ File written successfully\nPath: ${resolvedPath}\nSize: ${stats.size} bytes\nLines: ${lineCount}\nTimeout: ${timeoutSeconds}s`
                 }]
             };
         } catch (err: any) {

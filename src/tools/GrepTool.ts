@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import { BaseTool } from './BaseTool.js';
+import { estimateTimeout } from '../utils/TimeoutEstimator.js';
 
 const execAsync = promisify(exec);
 
@@ -26,6 +27,15 @@ export class GrepTool extends BaseTool {
         glob?: string;
     }) {
         try {
+            // Validate path is within allowed directories
+            const pathValidation = this.validateFilePath(searchPath);
+            if (!pathValidation.valid) {
+                return {
+                    content: [{ type: "text", text: pathValidation.error! }],
+                    isError: true
+                };
+            }
+
             console.error(`🔎 Grep search: "${pattern}" in ${searchPath}`);
 
             const resolvedPath = path.resolve(searchPath);
@@ -50,9 +60,17 @@ export class GrepTool extends BaseTool {
             // Limit output and handle errors gracefully
             cmd += ' 2>/dev/null | head -n 200';
 
+            // Dynamic timeout based on search depth
+            const timeout = estimateTimeout('grep_search', {
+                searchDepth: globFilter ? 'shallow' : 'deep'
+            });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
+            console.error(`   Timeout: ${timeoutSeconds}s`);
+
             const { stdout, stderr } = await execAsync(cmd, {
                 maxBuffer: 1024 * 1024 * 10,
-                timeout: 30000 // 30 second timeout
+                timeout
             });
 
             const output = stdout.trim();
@@ -75,7 +93,7 @@ export class GrepTool extends BaseTool {
             return {
                 content: [{
                     type: "text",
-                    text: `[Found ~${matchCount} match(es)]\n\n${truncatedOutput}`
+                    text: `[Found ~${matchCount} match(es) | Timeout: ${timeoutSeconds}s]\n\n${truncatedOutput}`
                 }]
             };
         } catch (err: any) {
@@ -87,8 +105,9 @@ export class GrepTool extends BaseTool {
             }
 
             if (err.killed) {
+                const timeout = estimateTimeout('grep_search');
                 return {
-                    content: [{ type: "text", text: `❌ Search timed out after 30 seconds. Try a more specific pattern.` }],
+                    content: [{ type: "text", text: `❌ Search timed out after ${(timeout / 1000).toFixed(1)} seconds. Try a more specific pattern.` }],
                     isError: true
                 };
             }

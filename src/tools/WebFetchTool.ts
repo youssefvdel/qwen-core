@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BaseTool } from './BaseTool.js';
+import { estimateTimeout } from '../utils/TimeoutEstimator.js';
 
 export class WebFetchTool extends BaseTool {
     name = "web_fetch";
@@ -25,12 +26,22 @@ export class WebFetchTool extends BaseTool {
                 };
             }
 
+            // Determine URL type for dynamic timeout
+            const isApi = parsedUrl.pathname.startsWith('/api/') || parsedUrl.pathname.endsWith('.json');
+            const urlType = isApi ? 'api' : 'page';
+
+            // Dynamic timeout based on URL type
+            const timeout = estimateTimeout('web_fetch', { urlType });
+            const timeoutSeconds = (timeout / 1000).toFixed(1);
+
+            console.error(`   Timeout: ${timeoutSeconds}s`);
+
             // Fetch the URL
             const response = await fetch(url, {
                 headers: {
                     'User-Agent': 'Qwen-Core-Agent/1.0'
                 },
-                signal: AbortSignal.timeout(10000) // 10 second timeout
+                signal: AbortSignal.timeout(timeout)
             });
 
             if (!response.ok) {
@@ -68,12 +79,13 @@ export class WebFetchTool extends BaseTool {
             }
 
             return {
-                content: [{ type: "text", text: result }]
+                content: [{ type: "text", text: `[Fetched in ${timeoutSeconds}s timeout]\n${result}` }]
             };
         } catch (err: any) {
             if (err.name === 'TimeoutError') {
+                const timeout = estimateTimeout('web_fetch');
                 return {
-                    content: [{ type: "text", text: `❌ Request timed out after 10 seconds` }],
+                    content: [{ type: "text", text: `❌ Request timed out after ${(timeout / 1000).toFixed(1)} seconds` }],
                     isError: true
                 };
             }
