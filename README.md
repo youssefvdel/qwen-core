@@ -6,13 +6,13 @@
 ![Tools](https://img.shields.io/badge/Tools-28-red)
 ![Prompts](https://img.shields.io/badge/Prompts-3-purple)
 
-**All-in-One MCP Server** — 28 tools + 3 prompts for autonomous AI agents.
+**All-in-One MCP Server** -- 28 tools + 3 prompts for autonomous AI agents.
 
 https://www.npmjs.com/package/qwen-core
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install
 
@@ -41,7 +41,7 @@ That's it. No `cwd`, no env vars needed. Defaults handle everything.
 
 ---
 
-## 📦 Installation Options
+## Installation Options
 
 ### Global (Recommended)
 
@@ -70,7 +70,7 @@ npx tsx src/index.ts
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Minimal Config
 
@@ -109,7 +109,7 @@ npx tsx src/index.ts
 
 ---
 
-## 🧠 Smart Defaults
+## Smart Defaults
 
 ### Dynamic Timeout
 
@@ -117,15 +117,14 @@ Each operation gets a smart timeout based on type and complexity:
 
 | Operation | Base Timeout | Factors |
 |-----------|-------------|---------|
-| File read/write | 5s | Content size (1x–3x) |
-| File edit | 5s | Content size (1x–3x) |
+| File read/write | 5s | Content size (1x-3x) |
+| File edit | 5s | Content size (1x-3x) |
 | Bash (quick: `ls`, `cat`) | 7.5s | Command type |
 | Bash (build: `npm run build`) | 45s | Command type |
 | Bash (install: `npm install`) | 60s | Command type |
 | Bash (test: `npm test`) | 30s | Command type |
-| Grep search | 15s | Search depth (1x–3x) |
-| Glob search | 10s | Recursive (1x–3x) |
-| Web fetch | 15s | URL type (1x–3x) |
+| Grep search | 15s | Search depth (1x-3x) |
+| Glob search | 10s | Recursive (1x-3x) |
 | Git operations | 20s | Fixed |
 
 ### Path Validation
@@ -138,29 +137,75 @@ File operations are restricted to allowed directories by default:
 
 Prevents accidental system file modification.
 
+### Output Sanitization
+
+All tool outputs are sanitized to prevent MCP protocol crashes:
+
+- Null bytes removed
+- Control characters stripped
+- BOM and zero-width spaces removed
+- 500KB output limit per response
+
 ---
 
-## 🛠️ Tool Categories
+## Tool Categories
+
+qwen-core uses a category-based loading system. The AI discovers tools by category and loads only what it needs.
+
+### Category Discovery
+
+```
+list_categories {}
+```
+
+Returns all available categories. Then load a specific category:
+
+```
+load_category { category: "file" }
+```
+
+### Categories
 
 | Category | Count | Key Tools |
 |----------|-------|-----------|
-| **File** | 8 | `read_file`, `write_file`, `edit_file`, `list_directory`, `create_directory`, `delete_file`, `move_file`, `delete_directory` |
-| **File Extended** | 3 | `read_text_file`, `read_multiple_files`, `read_pdf` |
+| **File** | 10 | `read_file`, `write_file`, `edit_file`, `list_directory`, `create_directory`, `delete_file`, `move_file`, `delete_directory`, `read_text_file`, `read_multiple_files` |
 | **Search** | 2 | `glob_search`, `grep_search` |
 | **Time** | 2 | `get_current_time`, `convert_time` |
 | **System** | 1 | `bash` |
-| **Agent** | 3 | `sequential_thinking`, `todo_write`, `autonomous_agent` |
+| **PDF** | 1 | `read_pdf` |
+| **Agent** | 5 | `sequential_thinking`, `todo_write`, `autonomous_agent`, `error_memory_status`, `clear_error_memory` |
 | **Skills** | 3 | `list_skills`, `load_skill`, `skill_info` |
-| **Memory** | 2 | `error_memory_status`, `clear_error_memory` |
 | **Core** | 4 | `bash_execute`, `file_read`, `file_write`, `file_edit` |
 
 ---
 
-## 🧠 Prompt Templates
+## Think-First Rule
+
+qwen-core enforces a **think-before-act** protocol. The AI must call `sequential_thinking` before using any action tool.
+
+### Example Flow
+
+```
+Task: "Fix the login bug"
+
+1. sequential_thinking: "I need to find the login module first. I'll use glob_search."
+2. glob_search: "**/*auth*.ts"
+3. sequential_thinking: "Found auth.ts. I need to read it to understand the login flow."
+4. read_file: "src/auth.ts"
+5. sequential_thinking: "Found the bug: null check missing on user object."
+6. edit_file: Add null check
+7. read_file: Verify fix
+```
+
+This ensures the AI is 100% sure about what it's doing before taking action.
+
+---
+
+## Prompt Templates
 
 ### `autonomous-agent`
 
-Teaches the model the Think → Plan → Act → Observe → Correct cycle.
+Teaches the model the Think -> Plan -> Act -> Observe -> Correct cycle with strict tool-first mandate.
 
 ### `skill-loader`
 
@@ -172,13 +217,13 @@ Breaks complex tasks into sequential steps.
 
 ---
 
-## 📁 Skills System
+## Skills System
 
 Skills auto-load from:
 
-1. `~/.agents/skills/{name}/SKILL.md` — Global
-2. `./skills/{name}/SKILL.md` — Project
-3. `./.qwen/skills/{name}/SKILL.md` — Alternative
+1. `~/.agents/skills/{name}/SKILL.md` -- Global
+2. `./skills/{name}/SKILL.md` -- Project
+3. `./.qwen/skills/{name}/SKILL.md` -- Alternative
 
 ### Creating a Skill
 
@@ -196,19 +241,19 @@ triggers: ["keyword1", "keyword2"]
 
 ---
 
-## 🔄 Autonomous Agent Protocol
+## Autonomous Agent Protocol
 
 ```
-1. THINK  →  sequential_thinking: "Analyzing the problem..."
-2. PLAN   →  todo_write: [{ content: "Step 1", status: "pending" }]
-3. ACT    →  read_file, edit_file, bash, etc.
-4. OBSERVE →  Verify results
-5. CORRECT →  Fix errors, retry
+1. THINK  ->  sequential_thinking: "Analyzing the problem..."
+2. PLAN   ->  todo_write: [{ content: "Step 1", status: "pending" }]
+3. ACT    ->  read_file, edit_file, bash, etc.
+4. OBSERVE ->  Verify results
+5. CORRECT ->  Fix errors, retry
 ```
 
 ---
 
-## 📋 Rules Engine
+## Rules Engine
 
 Create `.qwenrules` in your project root:
 
@@ -223,7 +268,7 @@ Never commit .env files
 
 ---
 
-## 🧪 Development
+## Development
 
 ```bash
 # Clone
@@ -242,7 +287,7 @@ npx tsc --noEmit
 
 ---
 
-## 📊 Example Usage
+## Example Usage
 
 ### Bug Fix Flow
 
@@ -257,8 +302,8 @@ Agent:
 5. sequential_thinking: "Found null check missing"
 6. edit_file: Add null check
 7. read_file: Verify fix
-8. git_diff: Review changes
-9. git_add + git_commit: Commit
+8. bash: "git diff"
+9. bash: "git add . && git commit -m 'fix: add null check'"
 10. Report completion
 ```
 
@@ -275,9 +320,19 @@ Agent:
    - Refactor
 ```
 
+### Using Categories
+
+```
+Agent:
+1. list_categories: See all available categories
+2. load_category: {"category": "file"} Get file tool instructions
+3. sequential_thinking: "I need to read the config file first"
+4. read_file: {"path": "config.json"}
+```
+
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 qwen-core/
@@ -289,8 +344,9 @@ qwen-core/
 │   │   ├── FileReadTool.ts   # Path validation
 │   │   └── ...
 │   ├── utils/
-│   │   ├── PathValidator.ts  # MCP_ALLOWED_DIRS enforcement
-│   │   └── TimeoutEstimator.ts # Smart timeout calculation
+│   │   ├── PathValidator.ts      # MCP_ALLOWED_DIRS enforcement
+│   │   ├── TimeoutEstimator.ts   # Smart timeout calculation
+│   │   └── SanitizeToolOutput.ts # Output sanitization
 │   └── agent/                # Agent infrastructure
 ├── skills/                   # Skill definitions
 └── package.json
@@ -298,26 +354,29 @@ qwen-core/
 
 ---
 
-## 🔒 Safety Features
+## Safety Features
 
 - Path validation restricts file operations to allowed directories
 - Dynamic timeouts prevent hung operations
 - Read-before-edit verification
-- Dangerous command detection (`rm -rf /`, fork bombs, etc.)
+- Dangerous command detection (rm -rf /, fork bombs, etc.)
 - Error isolation and recovery
+- Output sanitization prevents MCP protocol crashes
+- No emojis in responses (prevents encoding issues)
 
 ---
 
-## 📈 Performance
+## Performance
 
 - Dynamic timeout estimation per operation
-- Smart search fallbacks (ripgrep → grep)
+- Smart search fallbacks (ripgrep -> grep)
 - Efficient file operations with size-based timeouts
 - Optimized PDF parsing
+- Category-based tool loading reduces token usage
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch: `git checkout -b feat/new-tool`
@@ -327,13 +386,13 @@ qwen-core/
 
 ---
 
-## 📄 License
+## License
 
-MIT License — See LICENSE file
+MIT License -- See LICENSE file
 
 ---
 
-## 🙏 Credits
+## Credits
 
 Built with:
 
@@ -346,4 +405,4 @@ Built with:
 
 ---
 
-**qwen-core** — Making AI agents truly autonomous 🚀
+**qwen-core v2.1.1** -- Making AI agents truly autonomous
