@@ -53,8 +53,7 @@ npm install
   "mcpServers": {
     "qwen-core": {
       "command": "npx",
-      "args": ["tsx", "src/index.ts"],
-      "cwd": "/path/to/qwen-core"
+      "args": ["-y", "qwen-core"]
     }
   }
 }
@@ -67,7 +66,7 @@ npm install
     "servers": {
       "qwen-core": {
         "command": "npx",
-        "args": ["tsx", "src/index.ts"]
+        "args": ["-y", "qwen-core"]
       }
     }
   }
