@@ -7,20 +7,24 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import fg from "fast-glob";
 import fetch from "node-fetch";
-import simpleGit from "simple-git";
 import { z } from "zod";
 import { initAllowedDirs, getPathRestrictionMessage } from "./utils/PathValidator.js";
 import { getTimeoutDescription } from "./utils/TimeoutEstimator.js";
 import { sanitizeOutput, sanitizeError } from "./utils/SanitizeToolOutput.js";
 import pkg from "../package.json" with { type: "json" };
 
-// Helper to create safe tool responses
 function safeResponse(text: string) {
-  return { content: [{ type: "text" as const, text: sanitizeOutput(text) }] };
+  const now = new Date();
+  const timestamp = now.toISOString();
+  const timestampedText = `[${timestamp}] ${text}`;
+  return { content: [{ type: "text" as const, text: sanitizeOutput(timestampedText) }] };
 }
 
 function safeErrorResponse(text: string) {
-  return { content: [{ type: "text" as const, text: sanitizeError(text) }], isError: true };
+  const now = new Date();
+  const timestamp = now.toISOString();
+  const timestampedText = `[${timestamp}] ERROR: ${text}`;
+  return { content: [{ type: "text" as const, text: sanitizeError(timestampedText) }], isError: true };
 }
 
 const server = new Server({ name: "qwen-core", version: pkg.version }, { capabilities: { tools: {}, prompts: {} } });
@@ -515,94 +519,10 @@ RELATED TOOLS:
  inputSchema: {
  type: "object",
  properties: {}
- }
- },
- {
- name: "get_current_time",
- description: `Get current time in a specific timezone.
-
-USAGE PATTERNS:
-- Local time: get_current_time { timezone: "America/New_York" }
-- UTC time: get_current_time { timezone: "UTC" }
-- Asia time: get_current_time { timezone: "Asia/Tokyo" }
-- Europe time: get_current_time { timezone: "Europe/London" }
-
-COMMON TIMEZONES:
-- "America/New_York" - Eastern Time (ET)
-- "America/Los_Angeles" - Pacific Time (PT)
-- "America/Chicago" - Central Time (CT)
-- "Europe/London" - GMT/BST
-- "Europe/Paris" - Central European Time
-- "Asia/Tokyo" - Japan Standard Time
-- "Asia/Shanghai" - China Standard Time
-- "Australia/Sydney" - Australian Eastern Time
-- "UTC" - Coordinated Universal Time
-
-BEST PRACTICES:
-- Use IANA timezone names (not abbreviations)
-- Full list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-- Includes daylight saving time automatically
-
-WHEN TO USE:
-- Scheduling meetings across timezones
-- Timestamping events
-- Debugging timezone issues
-- Coordinating with remote teams
-
-RELATED TOOLS:
-- Use with: convert_time (convert between timezones)`,
- inputSchema: {
- type: "object",
- properties: {
- timezone: { type: "string", description: "IANA timezone name (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo')" }
- },
- required: ["timezone"]
- }
- },
- {
- name: "convert_time",
- description: `Convert time between timezones.
-
-USAGE PATTERNS:
-- Meeting conversion: convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }
-- Deadline conversion: convert_time { sourceTimezone: "UTC", time: "23:59", targetTimezone: "America/Los_Angeles" }
-- Call scheduling: convert_time { sourceTimezone: "Asia/Tokyo", time: "09:00", targetTimezone: "America/New_York" }
-
-PARAMETERS:
-- sourceTimezone: IANA timezone where the time is (required)
-- time: Time in HH:MM format (24-hour, required)
-- targetTimezone: IANA timezone to convert to (required)
-
-BEST PRACTICES:
-- Use 24-hour format (14:00 not 2:00 PM)
-- Include leading zeros (09:00 not 9:00)
-- Use full IANA timezone names
-- Accounts for daylight saving time
-
-COMMON USE CASES:
-- Scheduling international meetings
-- Converting deadlines
-- Planning calls across timezones
-- Understanding event times
-
-EXAMPLE:
-- "What time is 2 PM NYC in London?"
- convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }
-
-RELATED TOOLS:
-- Use with: get_current_time (check current times first)`,
- inputSchema: {
- type: "object",
- properties: {
- sourceTimezone: { type: "string", description: "Source IANA timezone (e.g., 'America/New_York')" },
- time: { type: "string", description: "Time in HH:MM 24-hour format (e.g., '14:00', '09:30')" },
- targetTimezone: { type: "string", description: "Target IANA timezone (e.g., 'Europe/London')" }
- },
- required: ["sourceTimezone", "time", "targetTimezone"]
- }
- },
- {
- name: "read_pdf",
+}
+  },
+  {
+  name: "read_pdf",
  description: `Extract text, metadata, and images from PDF files.
 
 USAGE PATTERNS:
@@ -641,11 +561,11 @@ RELATED TOOLS:
  includeMetadata: { type: "boolean", description: "Extract metadata (default: true)" },
  includeImages: { type: "boolean", description: "Extract images (default: false)" }
  },
- required: ["path"]
- }
- },
- {
- name: "list_skills",
+required: ["path"]
+  }
+  },
+  {
+  name: "list_skills",
  description: `List all installed Claude Code skills from ~/.agents/skills/.
 
 USAGE PATTERNS:
@@ -1087,7 +1007,6 @@ list_categories {}`,
 CATEGORIES:
 - file: read_file, write_file, edit_file, list_directory, create_directory, delete_file, move_file, delete_directory, read_text_file, read_multiple_files
 - search: glob_search, grep_search
-- time: get_current_time, convert_time
 - system: bash
 - pdf: read_pdf
 - agent: autonomous_agent, error_memory_status, clear_error_memory, todo_write, sequential_thinking
@@ -1097,14 +1016,14 @@ CATEGORIES:
 USAGE:
 load_category { category: "file" }
 load_category { category: "search" }`,
- inputSchema: {
- type: "object",
- properties: {
- category: { type: "string", enum: ["file", "search", "time", "system", "pdf", "agent", "skills", "core"], description: "Category name to load" }
- },
- required: ["category"]
- }
- },
+  inputSchema: {
+  type: "object",
+  properties: {
+  category: { type: "string", enum: ["file", "search", "system", "pdf", "agent", "skills", "core"], description: "Category name to load" }
+  },
+  required: ["category"]
+  }
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
@@ -1216,36 +1135,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  
  case "clear_error_memory": {
  const { clearErrorMemory } = await import('./agent/AutonomousAgent.js');
- clearErrorMemory();
- return safeResponse(" Error memory cleared");
- }
- 
- case "get_current_time": {
- const now = new Date();
- const timeString = now.toLocaleString("en-US", { timeZone: a.timezone });
- const offset = new Date().toLocaleString("en-US", { 
- timeZone: a.timezone, 
- timeZoneName: "short" 
- }).split(" ").pop();
- return safeResponse(` Current time in ${a.timezone}: ${timeString} (${offset})`);
- }
- 
- case "convert_time": {
- const [hours, minutes] = a.time.split(":").map(Number);
- const now = new Date();
- now.setHours(hours, minutes);
- 
- const sourceTime = new Date(now.toLocaleString("en-US", { timeZone: a.sourceTimezone }));
- const targetTime = new Date(sourceTime.toLocaleString("en-US", { timeZone: a.targetTimezone }));
- 
- return safeResponse(` ${a.time} in ${a.sourceTimezone} = ${targetTime.toLocaleTimeString("en-US", { 
- timeZone: a.targetTimezone,
- hour: "2-digit",
- minute: "2-digit"
- })} in ${a.targetTimezone}`);
- }
- 
- case "read_pdf": {
+clearErrorMemory();
+  return safeResponse(" Error memory cleared");
+  }
+  
+  case "read_pdf": {
  const pdfParse = await import("pdf-parse");
  const pdfBuffer = await fs.readFile(a.path);
  const data = await pdfParse.default(pdfBuffer);
@@ -1262,10 +1156,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  if (data.info?.Author) result += ` Author: ${data.info.Author}\n`;
  if (data.info?.CreationDate) result += ` Created: ${data.info.CreationDate}\n`;
  }
- return safeResponse(result.trim());
- }
- 
- case "list_skills": {
+return safeResponse(result.trim());
+  }
+  
+  case "list_skills": {
  const lockPath = path.join(process.env.HOME || "~", ".agents/.skill-lock.json");
  try {
  const lockContent = await fs.readFile(lockPath, "utf-8");
@@ -1358,7 +1252,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const categories = [
           { name: "file", tools: 10, desc: "Read, write, edit, list, create, delete, move files" },
           { name: "search", tools: 2, desc: "Find files by pattern (glob) or content (grep)" },
-          { name: "time", tools: 2, desc: "Get current time, convert between timezones" },
           { name: "system", tools: 1, desc: "Execute shell commands (bash)" },
           { name: "pdf", tools: 1, desc: "Extract text and metadata from PDF files" },
           { name: "agent", tools: 5, desc: "Autonomous agent, error memory, todo tracking, sequential thinking" },
@@ -1422,16 +1315,6 @@ glob_search - Find files by glob pattern
 grep_search - Search file contents using ripgrep or grep with regex
   Params: pattern (required), path (optional), caseSensitive (optional), filePattern (optional)
   Example: grep_search { pattern: "function getUser", filePattern: "*.ts" }`,
-
-          time: `TIME CATEGORY TOOLS:
-
-get_current_time - Get current time in a specific timezone
-  Params: timezone (required, IANA name like "America/New_York")
-  Example: get_current_time { timezone: "UTC" }
-
-convert_time - Convert time between timezones
-  Params: sourceTimezone (required), time (required, HH:MM 24-hour), targetTimezone (required)
-  Example: convert_time { sourceTimezone: "America/New_York", time: "14:00", targetTimezone: "Europe/London" }`,
 
           system: `SYSTEM CATEGORY TOOLS:
 
@@ -1519,24 +1402,53 @@ file_edit - Perform search-and-replace on a file
 // Prompt templates for autonomous agent behavior
 const PROMPTS = [
  {
- name: "autonomous-agent",
- description: "System prompt for autonomous AI agent behavior with tool usage patterns",
- arguments: []
+  name: "autonomous-agent",
+  description: "System prompt for autonomous AI agent behavior with tool usage patterns",
+  arguments: []
  },
  {
- name: "skill-loader",
- description: "Load and apply skills from ~/.agents/skills/ or ./skills/",
- arguments: [
- { name: "skillName", description: "Name of the skill to load", required: false }
- ]
+  name: "think-first",
+  description: "Think-first protocol with Intent Gate and Category-First thinking",
+  arguments: [
+   { name: "task", description: "The task to analyze", required: false }
+  ]
  },
  {
- name: "task-planner",
- description: "Break down complex tasks into sequential steps with todo tracking",
- arguments: [
- { name: "task", description: "The task to plan", required: true }
- ]
- }
+  name: "category-gateway",
+  description: "Category-first thinking gateway - think then choose category",
+  arguments: [
+   { name: "intent", description: "Classified intent type", required: false }
+  ]
+ },
+ {
+  name: "skill-loader",
+  description: "Load and apply skills from ~/.agents/skills/ or ./skills/",
+  arguments: [
+  { name: "skillName", description: "Name of the skill to load", required: false }
+  ]
+ },
+ {
+  name: "task-planner",
+  description: "Break down complex tasks into sequential steps with todo tracking",
+  arguments: [
+  { name: "task", description: "The task to plan", required: true }
+  ]
+ },
+ {
+name: "skill-auto-loader",
+  description: "Auto-load relevant skills based on context and task analysis",
+  arguments: [
+   { name: "context", description: "Current context (file types, operations)", required: false },
+   { name: "task", description: "Current task description", required: false }
+  ]
+  },
+  {
+   name: "slash-command",
+   description: "Handle slash commands like /tdd, /git, /security-review to load skills",
+   arguments: [
+    { name: "command", description: "The slash command (e.g., /tdd, /git)", required: true }
+   ]
+  }
 ];
 
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: PROMPTS }));
@@ -1547,110 +1459,172 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
  
  try {
  switch (name) {
- case "autonomous-agent": {
- const autonomousPrompt = `You are an autonomous AI agent with access to 39 tools.
+case "autonomous-agent": {
+  const autonomousPrompt = `You are "Qwen-Agent" - Autonomous AI Agent for qwen-core MCP server.
 
- CRITICAL RULE - ALWAYS USE TOOLS:
-- NEVER just explain what you would do - ACTUALLY DO IT WITH TOOLS
-- NEVER say "I can help with that" without calling a tool
-- NEVER describe steps without executing them
-- If a tool exists for the task, YOU MUST USE IT
-- Only use text explanations AFTER tool execution to explain results
+== AGENT IDENTITY ==
+**Identity**: SF Bay Area engineer. Work, delegate, verify, ship. No AI slop.
+**Core Competencies**:
+- Parsing implicit requirements from explicit requests
+- Adapting to codebase maturity (disciplined vs chaotic)
+- Delegating specialized work to right subagents
+- Parallel execution for maximum throughput
+- Follows user instructions. NEVER START IMPLEMENTING unless user wants you to.
 
-TOOL-FIRST MANDATE:
-1. See task → Find matching tool → CALL IT IMMEDIATELY
-2. Only explain AFTER you have tool results
-3. No tool calls = you haven't done the task
-4. Users want ACTIONS not explanations
+== PHASE 0: INTENT GATE (MANDATORY - EVERY MESSAGE) ==
 
-AVAILABLE TOOLS (USE THEM):
-- File ops: read_file, write_file, edit_file, read_text_file, read_multiple_files
-- Directory: list_directory, create_directory, delete_directory, move_file, delete_file
-- Search: glob_search (find files), grep_search (find content)
-- System: bash
-- Time: get_current_time, convert_time
-- PDF: read_pdf
-- Thinking: sequential_thinking (plan before complex actions)
-- Tasks: todo_write (track progress)
-- Agent: autonomous_agent (build/test/fix cycles)
-- Skills: list_skills, load_skill, skill_info
+### Step 0: Verbalize Intent (BEFORE Classification)
+Before classifying the task, identify what the user actually wants. Map surface form to true intent:
 
-CORE PROTOCOL:
-1. THINK FIRST: Use sequential_thinking before any complex action
-2. PLAN: Break tasks into steps using todo_write
-3. ACT: USE TOOLS - call them immediately, don't just describe
-4. OBSERVE: Check tool results carefully
-5. CORRECT: If wrong, acknowledge, analyze, and retry
+| Surface Form | True Intent | Routing |
+|--------------|--------------|---------|
+| "explain X", "how does Y work" | Research/understanding | explore → synthesize → answer |
+| "implement X", "add Y", "create Z" | Implementation (explicit) | plan → delegate or execute |
+| "look into X", "check Y", "investigate" | Investigation | explore → report findings |
+| "what do you think about X?" | Evaluation | evaluate → propose → WAIT for confirmation |
+| "I'm seeing error X" / "Y is broken" | Fix needed | diagnose → fix minimally |
+| "refactor", "improve", "clean up" | Open-ended change | assess codebase first → propose approach |
 
-TOOL USAGE PATTERNS:
+**VERBALIZE BEFORE PROCEEDING:**
+> "I detect [research/implementation/investigation/evaluation/fix/open-ended] intent - [reason]. My approach: [explore → answer / plan → delegate / clarify first / etc.]."
+
+This verbalization anchors your routing decision. It does NOT commit you to implementation - only user's explicit request does.
+
+### Step 1: Classify Request Type
+- **Trivial** (single file, known location, direct answer) → Direct tools only
+- **Explicit** (specific file/line, clear command) → Execute directly
+- **Exploratory** ("How does X work?", "Find Y") → Fire explore (1-3) + tools in parallel
+- **Open-ended** ("Improve", "Refactor", "Add feature") → Assess codebase first
+- **Ambiguous** (unclear scope, multiple interpretations) → Ask ONE clarifying question
+
+### Step 1.5: Turn-Local Intent Reset (MANDATORY)
+- Reclassify intent from CURRENT message only. Never auto-carry "implementation mode" from prior turns.
+- If current message is question/explanation/investigation, answer/analyze only. Do NOT create todos or edit files.
+- If user is still giving context or constraints, gather/confirm context first. Do NOT start implementation yet.
+
+### Step 2: Check for Ambiguity
+- Single valid interpretation → Proceed
+- Multiple interpretations, similar effort → Proceed with reasonable default, note assumption
+- Multiple interpretations, 2x+ effort difference → MUST ask
+- Missing critical info (file, error, context) → MUST ask
+- User's design seems flawed → MUST raise concern before implementing
+
+### Step 2.5: Context-Completion Gate (BEFORE Implementation)
+You may implement only when ALL are true:
+1. The current message contains explicit implementation verb (implement/add/create/fix/change/write)
+2. Scope/objective is sufficiently concrete to execute without guessing
+3. No blocking specialist result is pending
+
+If any condition fails, do research/clarification only, then wait.
+
+### Step 3: Validate Before Acting
+
+**Delegation Check (MANDATORY before acting directly):**
+1. Is there a specialized agent that perfectly matches this request?
+2. Is there a \`category\` that best describes this task? (visual-engineering, deep, quick, ultrabrain)
+3. Can I do it myself for the best result, FOR SURE? REALLY, REALLY, no appropriate category?
+
+**Default Bias: DELEGATE. WORK YOURSELF ONLY WHEN IT IS SUPER SIMPLE.**
+
+== CATEGORY-FIRST THINKING ==
+
+When you need to act, ALWAYS choose a category first:
+
+| Category | When to Use | Tools |
+|----------|-------------|-------|
+| **file** | File operations | read_file, write_file, edit_file, glob_search, grep_search |
+| **search** | Code discovery | glob_search, grep_search, list_directory |
+| **agent** | Autonomous cycles | autonomous_agent, sequential_thinking, todo_write |
+| **skills** | Skill loading | load_skill, list_skills |
+| **system** | Commands | bash |
+
+**MUST call category-gateway BEFORE using tools to declare your intent.**
+
+== TOOL USAGE PATTERNS ==
 - File ops: read_file → edit_file → verify with read_file
-- Git: git_status → make changes → git_diff → git_add → git_commit
 - Search: glob_search (find files) → grep_search (find content) → read_file
 - Debug: sequential_thinking → read_file → grep_search → fix → verify
-- Research: web_search → web_fetch → synthesize → apply
+- Build/Test: autonomous_agent (build/test/fix cycles)
 
-SKILLS SYSTEM:
-Skills are loaded from:
-1. ~/.agents/skills/{name}/SKILL.md - Global skills
-2. ./skills/{name}/SKILL.md - Project skills
-3. ./.qwen/skills/{name}/SKILL.md - Alternative project skills
+== SELF-HEALING LOOP (Build → Test → Fix) ==
+When using autonomous_agent tool:
+1. Build → runs build command → OBSERVE result
+2. Test → runs test command → OBSERVE result
+3. Fix → if failed, attempt fix → retry (max 3 iterations)
+4. After 3 failures: STOP, REVERT, DOCUMENT, ASK USER
 
-To use a skill, either:
-- Call load_skill tool: {"name": "skillname"}
-- The skill instructions will be injected into context
+== SKILLS SYSTEM (AUTO-LOAD) ==
+Skills auto-load based on context. Available:
+- tdd: Test-Driven Development workflow (triggers: "test", "TDD", "red-green")
+- git: Git best practices (triggers: "commit", "branch", "git")
+- security-review: Security auditing (triggers: "security", "audit", "vulnerability")
+- frontend-design: UI/UX patterns (triggers: "UI", "design", "frontend", "component")
+- optimize: Performance optimization (triggers: "performance", "optimize", "speed")
+- audit: Code quality review (triggers: "audit", "quality", "review")
 
-AVAILABLE CORE SKILLS:
-- autonomous-agent: This prompt (auto-loaded)
-- tdd: Test-Driven Development workflow
-- git: Git best practices
-- security-review: Security auditing
-- frontend-design: UI/UX patterns
-- optimize: Performance optimization
-- audit: Code quality review
+Skills load from:
+1. ~/.agents/skills/{name}/SKILL.md - Global
+2. ./skills/{name}/SKILL.md - Project
+3. ./.qwen/skills/{name}/SKILL.md - Alternative
 
-ERROR RECOVERY:
+To use skill: call load_skill with skill name, or it auto-loads based on triggers.
+
+== ERROR RECOVERY ==
 1. Acknowledge the error
 2. Use sequential_thinking to analyze why
 3. Create a new plan
 4. Execute with corrections
 5. Verify the fix
+6. If 3 consecutive failures: STOP, REVERT, DOCUMENT, ASK USER
 
-SAFETY RULES:
+== SAFETY RULES ==
 - Read files before editing
-- Verify git diffs before committing
+- Verify changes before committing
 - Ask before destructive operations
 - Log important decisions in todos
 
-COMMUNICATION:
+== COMMUNICATION STYLE ==
 - Be direct and concise
-- Explain reasoning AFTER tool execution
-- Report progress on complex tasks
-- Ask for clarification when needed
-- NEVER explain what you'll do - JUST DO IT WITH TOOLS
+- Start work immediately. No "I'm on it" or "Let me..."
+- Answer directly without preamble
+- One word answers acceptable when appropriate
+- Use todos for progress tracking - that's what they're for
 
-REMEMBER:
-- Tools are your hands - use them constantly
-- No tool call = task not started
-- Users want results, not explanations of how you'd get results
-- Think → Plan → ACT (tools) → Observe → Correct`;
- return {
- messages: [{
- role: "system",
- content: { type: "text", text: autonomousPrompt }
- }]
- };
- }
+== HARD BLOCKS (NEVER VIOLATE) ==
+- Type error suppression (as any, @ts-ignore) - Never
+- Commit without explicit request - Never
+- Leave code in broken state - Never
+- Empty catch blocks (catch(e) {}) - Never
+- Delete failing tests to "pass" - Never
+
+== VERIFICATION (MANDATORY) ==
+After any edit:
+1. Run lsp_diagnostics on changed files
+2. Check for build errors
+3. Verify the change works as expected
+
+NO EVIDENCE = NOT COMPLETE.
+
+REMEMBER: Think → Categorize → Plan → ACT → Observe → Correct`;
+  return {
+   messages: [{
+    role: "system",
+    content: { type: "text", text: autonomousPrompt }
+   }]
+  };
+  }
  
  case "skill-loader": {
  const skillName = a?.skillName;
  let skillsContent = "";
  
- // Try to load all available skills
- const skillPaths = [
- path.join(process.env.HOME || "~", ".agents/skills"),
- path.join(process.cwd(), "skills"),
- path.join(process.cwd(), ".qwen/skills")
- ];
+// Try to load all available skills
+  const skillPaths = [
+  path.join(process.env.HOME || "~", ".agents/skills"),
+  path.join(process.env.HOME || "~", ".config/opencode/skills"),
+  path.join(process.cwd(), "skills"),
+  path.join(process.cwd(), ".qwen/skills")
+  ];
  
  const availableSkills: Array<{ name: string; source: string }> = [];
  
@@ -1701,14 +1675,14 @@ REMEMBER:
  };
  }
  
- case "task-planner": {
- const task = a?.task || "Unknown task";
- return {
- messages: [{
- role: "user",
- content: {
- type: "text",
- text: `Plan this task using sequential_thinking and todo_write:
+case "task-planner": {
+  const task = a?.task || "Unknown task";
+  return {
+   messages: [{
+    role: "user",
+    content: {
+     type: "text",
+     text: `Plan this task using sequential_thinking and todo_write:
 
 ${task}
 
@@ -1720,12 +1694,188 @@ Break it down into:
 
 Use sequential_thinking for each major decision.
 Track progress with todo_write.`
- }
- }]
- };
- }
- 
- default:
+    }
+   }]
+  };
+  }
+
+  case "think-first": {
+    // Think-First Protocol: Intent Gate + Category-First Thinking
+    const task = a?.task || "";
+    const thinkFirstPrompt = `== THINK-FIRST PROTOCOL (Intent Gate) ==
+
+BEFORE you take ANY action, you MUST go through this thinking process:
+
+### STEP 1: Classify Intent
+What does the user actually want?
+
+| Intent Type | Trigger Phrases | Response |
+|-------------|-----------------|----------|
+| Research | "explain", "how does", "what is" | Explore → Synthesize → Answer |
+| Implementation | "implement", "add", "create", "build" | Plan → Execute |
+| Investigation | "look into", "check", "find", "debug" | Explore → Report |
+| Evaluation | "what do you think", "review", "assess" | Evaluate → Propose → WAIT |
+| Fix | "fix", "bug", "error", "broken" | Diagnose → Fix |
+| Open-ended | "improve", "refactor", "clean up" | Assess → Propose → Ask |
+
+### STEP 2: Check Ambiguity
+- Is the scope clear?
+- Do you have all needed info?
+- Are there multiple valid approaches?
+- If 2x+ effort difference → MUST ask user
+
+### STEP 3: Category Gateway
+Choose ONE category before acting:
+
+- **file**: Read, write, edit, glob, grep operations
+- **search**: Discovery, exploration, finding code
+- **agent**: Autonomous cycles, todo management, thinking
+- **skills**: Loading and using skills
+- **system**: Bash commands, git operations
+
+### STEP 4: Plan with Todo
+For multi-step tasks:
+1. Create todo list IMMEDIATELY
+2. Mark current task in_progress
+3. Mark completed as done (never batch)
+4. OBSESSIVELY track progress
+
+### STEP 5: Execute
+- Use appropriate tools for category
+- Verify after each step
+- Correct if wrong
+- After 3 failures: STOP → REVERT → DOCUMENT → ASK USER
+
+== CURRENT TASK ==
+${task || "No specific task - analyze what the user is asking"}
+
+Apply Think-First Protocol. What is the intent? What category? What's your approach?
+
+Call sequential_thinking to document your reasoning.`;
+    return {
+     messages: [{
+      role: "user",
+      content: { type: "text", text: thinkFirstPrompt }
+     }]
+    };
+  }
+
+  case "category-gateway": {
+    // Category-First Thinking Gateway
+    const intent = a?.intent || "";
+    const categoryGatewayPrompt = `== CATEGORY-FIRST THINKING GATEWAY ==
+
+You have classified the intent. Now choose your CATEGORY.
+
+**MANDATORY: Declare category BEFORE using tools.**
+
+| Category | Use When | Available Tools |
+|----------|-----------|-----------------|
+| **file** | Reading, writing, editing files | read_file, write_file, edit_file, glob_search, grep_search |
+| **search** | Finding code, exploring codebase | glob_search, grep_search, list_directory, read_file |
+| **agent** | Autonomous work, planning, thinking | sequential_thinking, todo_write, autonomous_agent |
+| **skills** | Loading and using skills | load_skill, list_skills, skill_info |
+| **system** | Running commands, git | bash, git operations |
+
+== INTENT CLASSIFIED ==
+${intent || "Analyzing from user message..."}
+
+**YOUR RESPONSE MUST INCLUDE:**
+1. Category declaration: "CATEGORY: [file|search|agent|skills|system]"
+2. Reasoning: Why this category?
+3. Tool plan: Which tools you'll use and in what order
+
+Example:
+> "CATEGORY: file
+> Reasoning: User wants to fix a bug in auth.ts - need to read and edit the file.
+> Tool plan: 1) read_file(path='src/auth.ts') 2) grep_search(pattern='login') 3) edit_file(...)"
+
+Call sequential_thinking to document your category decision.`;
+    return {
+     messages: [{
+      role: "user",
+      content: { type: "text", text: categoryGatewayPrompt }
+     }]
+    };
+  }
+
+  case "skill-auto-loader": {
+    // Auto-load skills based on context
+    const context = a?.context || "";
+    const task = a?.task || "";
+    const skillAutoLoaderPrompt = `== SKILL AUTO-LOADER ==
+
+Analyzing context and task to auto-load relevant skills...
+
+**Current Context:**
+${context || "Analyzing from file types, operations, and conversation..."}
+
+**Current Task:**
+${task || "No specific task provided"}
+
+== SKILL TRIGGER RULES ==
+
+A skill auto-loads when these triggers appear in the task or context:
+
+| Skill | Triggers | When to Use |
+|-------|----------|-------------|
+| **tdd** | test, TDD, red-green, "write test", "test first" | Any test-related work |
+| **git** | commit, branch, merge, push, "git", "version control" | Git operations |
+| **security-review** | security, audit, vulnerability, "check for", "secure" | Security-sensitive work |
+| **frontend-design** | UI, design, frontend, component, "interface", "UX" | Frontend/UI work |
+| **optimize** | performance, optimize, speed, "faster", "improve performance" | Performance work |
+| **audit** | audit, review, quality, "check code", "assess" | Code review |
+| **brainstorming** | create, build, add feature, "how to", "best way" | Before creative work |
+| **systematic-debugging** | bug, error, broken, "fix", "debug" | When something fails |
+
+== SKILL LOADING PRIORITY ==
+
+1. **Direct Load**: Call load_skill with skill name
+2. **Context Match**: Auto-detect from file types (.ts/.tsx → frontend-design, .py → etc.)
+3. **Operation Match**: Auto-detect from operations (test → tdd, commit → git)
+
+== VERIFY LOADED SKILLS ==
+After loading, confirm which skills are active:
+- "Loaded: tdd, git" (comma-separated list)
+
+**ACTION: Analyze the context and task above. What skills should be loaded? Call load_skill for each. If none match, respond "No skills auto-loaded - using base prompt."**`;
+    return {
+     messages: [{
+      role: "user",
+      content: { type: "text", text: skillAutoLoaderPrompt }
+     }]
+    };
+  }
+
+  case "slash-command": {
+    const command = a?.command || "";
+    const slashCommandPrompt = `== SLASH COMMAND HANDLER ==
+
+You received a slash command: ${command}
+
+Extract the skill name from the command (remove leading "/"):
+- /tdd → skill name: "tdd"
+- /git → skill name: "git"
+- /security-review → skill name: "security-review"
+- /frontend-design → skill name: "frontend-design"
+- /optimize → skill name: "optimize"
+- /audit → skill name: "audit"
+
+**ACTION REQUIRED:**
+1. Extract skill name from command
+2. Call load_skill { name: "skillname" } to load the skill
+3. Confirm: "Loaded skill: [skillname]"
+
+If the skill doesn't exist, respond: "Skill '[name]' not found. Use load_skill with a valid skill name."`;
+    return {
+     messages: [{
+      role: "user",
+      content: { type: "text", text: slashCommandPrompt }
+     }]
+    };
+  }
+  
+  default:
  throw new Error(`Unknown prompt: ${name}`);
  }
  } catch (e: any) {
@@ -1737,15 +1887,17 @@ async function main() {
  console.error(` qwen-core v${pkg.version} starting...`);
  
  // Initialize path validation
- initAllowedDirs();
- console.error(` ${getPathRestrictionMessage()}`);
- 
- const transport = new StdioServerTransport();
- await server.connect(transport);
- console.error(" Ready - 28 tools + 3 prompts loaded");
- console.error(" Categories: File (8), Search (2), Git (0), Time (2), PDF (1), System (1), Skills (3), Agent (3), Core (8)");
- console.error(" Prompts: autonomous-agent, skill-loader, task-planner");
- console.error(" Skills auto-load from: ~/.agents/skills/, ./skills/, ./.qwen/skills/");
+initAllowedDirs();
+  console.error(` ${getPathRestrictionMessage()}`);
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error(" Ready - 26 tools + 7 prompts loaded");
+  console.error(" Categories: File (10), Search (2), PDF (1), System (1), Skills (3), Agent (5), Core (4)");
+  console.error(" Prompts: autonomous-agent, think-first, category-gateway, skill-loader, task-planner, skill-auto-loader, slash-command");
+  console.error(" All tool outputs include ISO timestamp - agent always knows current date/time");
+  console.error(" Skills load from: ~/.agents/skills/, ~/.config/opencode/skills/, ./skills/, ./.qwen/skills/");
+  console.error(" Use /skillname to load skills (e.g., /tdd, /git, /security-review)");
 }
 
 main().catch(e => { 

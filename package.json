@@ -37,6 +37,9 @@
   ],
   "author": "youssefvdel",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@sylphx/pdf-reader-mcp": "^2.4.0",
