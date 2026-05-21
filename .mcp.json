@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "qwen-core": {
+      "command": "npx",
+      "args": ["-y", "qwen-core"]
+    }
+  }
+}
